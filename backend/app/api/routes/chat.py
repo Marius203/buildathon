@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from app.api.dependencies import get_current_user
-from app.db.repositories.chat_repo import get_history, save_message
+from app.db.repositories.chat_repo import get_history, get_or_set_session_lang, save_message
 from app.models.chat import MessageRequest, MessageResponse
 from app.services.agent_service import get_agent_response, stream_agent_response
 
@@ -13,8 +13,9 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("/message", response_model=MessageResponse)
 async def send_message(body: MessageRequest, user=Depends(get_current_user)):
+    lang = await get_or_set_session_lang(body.session_id, body.message)
     await save_message(body.session_id, "user", body.message)
-    response, answered = await get_agent_response(body.message, body.session_id)
+    response, answered = await get_agent_response(body.message, body.session_id, lang=lang)
     await save_message(body.session_id, "assistant", response, answered)
     return MessageResponse(
         session_id=body.session_id,
@@ -25,6 +26,7 @@ async def send_message(body: MessageRequest, user=Depends(get_current_user)):
 
 @router.post("/stream")
 async def stream_message(body: MessageRequest, user=Depends(get_current_user)):
+    lang = await get_or_set_session_lang(body.session_id, body.message)
     await save_message(body.session_id, "user", body.message)
 
     tokens: list[str] = []
@@ -32,7 +34,7 @@ async def stream_message(body: MessageRequest, user=Depends(get_current_user)):
 
     async def generate():
         nonlocal low_confidence
-        async for chunk in stream_agent_response(body.message):
+        async for chunk in stream_agent_response(body.message, lang=lang):
             yield chunk
             try:
                 data = json.loads(chunk.strip())

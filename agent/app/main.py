@@ -17,6 +17,7 @@ from app.agent.answerer import answer as run_answer, answer_stream_async as run_
 from app.db.chroma import get_kb_collection
 from app.embeddings.ollama import OLLAMA_BASE_URL
 from app.lib.bm25_index import build_indexes, get_store
+from app.llm.claude_client import detect_language
 from app.tools.search_kb import search_kb
 
 
@@ -133,6 +134,19 @@ async def answer_stream(req: AnswerRequest) -> StreamingResponse:
             yield json.dumps(event) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+class DetectLangRequest(BaseModel):
+    text: str = Field(min_length=1)
+
+
+class DetectLangResponse(BaseModel):
+    lang: Literal["ro", "en"]
+
+
+@app.post("/detect-lang", response_model=DetectLangResponse)
+async def detect_lang(req: DetectLangRequest) -> DetectLangResponse:
+    return DetectLangResponse(lang=detect_language(req.text))
 
 
 @app.post("/answer", response_model=AnswerResponse)

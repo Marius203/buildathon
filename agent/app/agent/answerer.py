@@ -15,7 +15,7 @@ from app.tools.search_kb import DEFAULT_K, has_strong_match, search_kb
 
 ANSWERER_MODEL = CLAUDE_MODEL
 
-LLM_OPTIONS = {"temperature": 0.2}
+LLM_OPTIONS = {"temperature": 0.5}
 
 
 def answer(

@@ -5,12 +5,12 @@ import httpx
 AGENT_URL = "http://localhost:8000"
 
 
-async def get_agent_response(message: str, session_id: str) -> tuple[str, bool]:
+async def get_agent_response(message: str, session_id: str, lang: str = "en") -> tuple[str, bool]:
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             res = await client.post(
                 f"{AGENT_URL}/answer",
-                json={"query": message, "lang": "en"},
+                json={"query": message, "lang": lang},
             )
             res.raise_for_status()
             data = res.json()
@@ -22,13 +22,13 @@ async def get_agent_response(message: str, session_id: str) -> tuple[str, bool]:
         return f"Could not reach agent: {exc}", False
 
 
-async def stream_agent_response(message: str) -> AsyncIterator[str]:
+async def stream_agent_response(message: str, lang: str = "en") -> AsyncIterator[str]:
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream(
                 "POST",
                 f"{AGENT_URL}/answer/stream",
-                json={"query": message, "lang": "en"},
+                json={"query": message, "lang": lang},
             ) as res:
                 res.raise_for_status()
                 async for line in res.aiter_lines():

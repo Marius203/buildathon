@@ -91,6 +91,25 @@ def chat_stream(
                 yield text
 
 
+def detect_language(text: str) -> str:
+    """Returns 'ro' or 'en'. Uses Haiku as a cheap classifier; falls back to
+    'en' on any error so the caller can decide whether to retry."""
+    if not text.strip():
+        return "en"
+    try:
+        resp = _client().messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=2,
+            temperature=0,
+            system="You classify the language of the user's message. Reply with exactly one token: 'ro' for Romanian, 'en' for anything else (English, mixed, unknown). No punctuation, no explanation.",
+            messages=[{"role": "user", "content": text[:500]}],
+        )
+        out = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip().lower()
+        return "ro" if out.startswith("ro") else "en"
+    except Exception:
+        return "en"
+
+
 async def chat_stream_async(
     messages: list[dict[str, Any]],
     *,

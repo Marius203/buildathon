@@ -1,0 +1,623 @@
+[
+  {
+    "case": {
+      "id": "transport_cluj_en",
+      "query": "How do I get from Cluj-Napoca to the festival without a car?",
+      "lang": "en",
+      "expected_topics": [
+        "transport"
+      ]
+    },
+    "answer": {
+      "query": "How do I get from Cluj-Napoca to the festival without a car?",
+      "lang": "en",
+      "topic": null,
+      "answer": "You can use official transportation options like the dedicated EC trains that depart from Cluj-Napoca's Small Railway Station and continue by bus to the festival site. There are also non-stop buses available for this journey.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s9_1",
+          "section": "9.1",
+          "section_title": "Cum ajungi la festival — Prezentare generală",
+          "topic": "transport",
+          "score": 0.032266
+        },
+        {
+          "id": "kb_md_2026_en_s7",
+          "section": "7",
+          "section_title": "Acces și intrare",
+          "topic": "tickets",
+          "score": 0.032018
+        },
+        {
+          "id": "kb_md_2026_en_s9_2",
+          "section": "9.2",
+          "section_title": "Cum ajungi la festival — Trenuri EC",
+          "topic": "transport",
+          "score": 0.032002
+        },
+        {
+          "id": "kb_md_2026_en_s2",
+          "section": "2",
+          "section_title": "Când și unde are loc",
+          "topic": "dates_location",
+          "score": 0.031514
+        },
+        {
+          "id": "kb_md_2026_en_s0",
+          "section": "0",
+          "section_title": "Introducere",
+          "topic": "overview",
+          "score": 0.03031
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 8,
+      "completeness": 8,
+      "tone": 9,
+      "language_compliance": 10,
+      "concision": 7,
+      "overall": 8,
+      "rationale": "The answer is grounded and complete, addressing the user's question about transportation to Electric Castle. The tone is friendly and appropriate for a festival guide. However, it could be more concise by removing some of the redundant information from source chunks [1] and [3]."
+    }
+  },
+  {
+    "case": {
+      "id": "transport_cluj_ro",
+      "query": "Cum ajung de la Cluj la festival fără mașină?",
+      "lang": "ro",
+      "expected_topics": [
+        "transport"
+      ]
+    },
+    "answer": {
+      "query": "Cum ajung de la Cluj la festival fără mașină?",
+      "lang": "ro",
+      "topic": null,
+      "answer": "Pentru a ajunge la Electric Castle fără mașină, te potrivești cu trenurile EC și autobuzele nonstop recomandate de organizatorii. Trenurile EC pleacă din Gara Mică din Cluj-Napoca și continuă către Bonțida prin autobuz.",
+      "sources": [
+        {
+          "id": "kb_md_2026_ro_s2",
+          "section": "2",
+          "section_title": "Când și unde are loc",
+          "topic": "dates_location",
+          "score": 0.032266
+        },
+        {
+          "id": "kb_md_2026_ro_s9_1",
+          "section": "9.1",
+          "section_title": "Cum ajungi la festival — Prezentare generală",
+          "topic": "transport",
+          "score": 0.032018
+        },
+        {
+          "id": "kb_md_2026_ro_s7",
+          "section": "7",
+          "section_title": "Acces și intrare",
+          "topic": "tickets",
+          "score": 0.031754
+        },
+        {
+          "id": "kb_md_2026_ro_s9_2",
+          "section": "9.2",
+          "section_title": "Cum ajungi la festival — Trenuri EC",
+          "topic": "transport",
+          "score": 0.031514
+        },
+        {
+          "id": "kb_md_2026_ro_s0",
+          "section": "0",
+          "section_title": "Introducere",
+          "topic": "overview",
+          "score": 0.030077
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 10,
+      "completeness": 9,
+      "tone": 8,
+      "language_compliance": 10,
+      "concision": 7,
+      "overall": 8,
+      "rationale": "The answer is fully grounded in the source chunks, addressing the question about transportation to Electric Castle without a car. It provides multiple options and recommendations from the organizers, which are supported by the retrieved information. The tone is appropriate for the context, maintaining a friendly yet professional demeanor. However, there could be more concise wording to improve concision."
+    }
+  },
+  {
+    "case": {
+      "id": "packing_rain_en",
+      "query": "What should I pack if it might rain?",
+      "lang": "en",
+      "expected_topics": [
+        "packing"
+      ]
+    },
+    "answer": {
+      "query": "What should I pack if it might rain?",
+      "lang": "en",
+      "topic": null,
+      "answer": "For potential rain, you should definitely pack a raincoat or poncho, along with your comfortable outerwear. Don't forget to bring sunscreen and lip balm for protection from sun and wind.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s19",
+          "section": "19",
+          "section_title": "Lista practică pentru bagaj",
+          "topic": "packing",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_en_s18",
+          "section": "18",
+          "section_title": "Ce merită pregătit înainte",
+          "topic": "packing",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_en_s22",
+          "section": "22",
+          "section_title": "Recomandări de experiență",
+          "topic": "tips",
+          "score": 0.03101
+        },
+        {
+          "id": "kb_md_2026_en_s20",
+          "section": "20",
+          "section_title": "Experiența de food și băuturi",
+          "topic": "food",
+          "score": 0.02904
+        },
+        {
+          "id": "kb_md_2026_en_s23",
+          "section": "23",
+          "section_title": "Pentru cine e festivalul",
+          "topic": "audience",
+          "score": 0.028992
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 9,
+      "completeness": 8,
+      "tone": 7,
+      "language_compliance": 10,
+      "concision": 6,
+      "overall": 7,
+      "rationale": "The answer is mostly grounded in the source chunks, addressing potential rain gear and other essentials. However, it includes some unrelated information about pre-swapping, transport reservations, and food options that do not directly address the user's question. The tone could be more focused on the specific topic of packing for rain. The language compliance is perfect as all text is in English. The answer is concise but could be trimmed further to improve clarity."
+    }
+  },
+  {
+    "case": {
+      "id": "tickets_price_ro",
+      "query": "Cât costă un bilet de o zi vs general pass?",
+      "lang": "ro",
+      "expected_topics": [
+        "tickets"
+      ]
+    },
+    "answer": {
+      "query": "Cât costă un bilet de o zi vs general pass?",
+      "lang": "ro",
+      "topic": null,
+      "answer": "Un bilet de o zi costa 119 EUR, în timp ce un General Access Pass dă acces total la festival și costă 250 EUR.",
+      "sources": [
+        {
+          "id": "kb_md_2026_ro_s5",
+          "section": "5",
+          "section_title": "Prețuri și opțiuni",
+          "topic": "tickets",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_ro_s4",
+          "section": "4",
+          "section_title": "Tipuri de bilete",
+          "topic": "tickets",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_ro_s7",
+          "section": "7",
+          "section_title": "Acces și intrare",
+          "topic": "tickets",
+          "score": 0.03055
+        },
+        {
+          "id": "kb_md_2026_ro_s9_3",
+          "section": "9.3",
+          "section_title": "Cum ajungi la festival — Autobuze",
+          "topic": "transport",
+          "score": 0.030366
+        },
+        {
+          "id": "kb_md_2026_ro_s6",
+          "section": "6",
+          "section_title": "Cumpărare și personalizare",
+          "topic": "tickets",
+          "score": 0.030303
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 10,
+      "completeness": 9,
+      "tone": 8,
+      "language_compliance": 10,
+      "concision": 7,
+      "overall": 8,
+      "rationale": "The answer is fully grounded in the provided source chunks, addressing the question comprehensively and accurately. The tone is appropriate for a festival assistant, maintaining friendliness while being professional. However, there could be more conciseness as some information was included that does not directly address the user's question."
+    }
+  },
+  {
+    "case": {
+      "id": "camping_safety_en",
+      "query": "Is camping at EC Village clean and safe?",
+      "lang": "en",
+      "expected_topics": [
+        "camping",
+        "safety"
+      ]
+    },
+    "answer": {
+      "query": "Is camping at EC Village clean and safe?",
+      "lang": "en",
+      "topic": null,
+      "answer": "The camping area in EC Village is designed to be clean and safe, with premium facilities like bathrooms, showers, and security points. However, I'm not sure, check closer to the festival for more detailed reports.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s10_1",
+          "section": "10.1",
+          "section_title": "Camping: EC Village — Prezentare generală",
+          "topic": "camping",
+          "score": 0.032787
+        },
+        {
+          "id": "kb_md_2026_en_s19",
+          "section": "19",
+          "section_title": "Lista practică pentru bagaj",
+          "topic": "packing",
+          "score": 0.031754
+        },
+        {
+          "id": "kb_md_2026_en_s2",
+          "section": "2",
+          "section_title": "Când și unde are loc",
+          "topic": "dates_location",
+          "score": 0.031746
+        },
+        {
+          "id": "kb_md_2026_en_s7",
+          "section": "7",
+          "section_title": "Acces și intrare",
+          "topic": "tickets",
+          "score": 0.031054
+        },
+        {
+          "id": "kb_md_2026_en_s18",
+          "section": "18",
+          "section_title": "Ce merită pregătit înainte",
+          "topic": "packing",
+          "score": 0.030777
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 9,
+      "completeness": 8,
+      "tone": 7,
+      "language_compliance": 10,
+      "concision": 6,
+      "overall": 7,
+      "rationale": "The answer is very grounded as it directly references the source chunks. However, there are some areas where more detail could be provided to fully address the question about cleanliness and safety of camping in EC Village."
+    }
+  },
+  {
+    "case": {
+      "id": "dates_en",
+      "query": "When does Electric Castle 2026 open and close?",
+      "lang": "en",
+      "expected_topics": [
+        "dates_location"
+      ]
+    },
+    "answer": {
+      "query": "When does Electric Castle 2026 open and close?",
+      "lang": "en",
+      "topic": null,
+      "answer": "Electric Castle 2026 opens on Thursday, July 16, at 14:00 and closes on Monday, July 20, at 08:00. The EC Village opens the day before, Wednesday, July 15, at 12:00, and closes on the same closing day.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s2",
+          "section": "2",
+          "section_title": "Când și unde are loc",
+          "topic": "dates_location",
+          "score": 0.032787
+        },
+        {
+          "id": "kb_md_2026_en_s0",
+          "section": "0",
+          "section_title": "Introducere",
+          "topic": "overview",
+          "score": 0.032002
+        },
+        {
+          "id": "kb_md_2026_en_s3",
+          "section": "3",
+          "section_title": "Program și dimensiune",
+          "topic": "lineup",
+          "score": 0.031754
+        },
+        {
+          "id": "kb_md_2026_en_s4",
+          "section": "4",
+          "section_title": "Tipuri de bilete",
+          "topic": "tickets",
+          "score": 0.031025
+        },
+        {
+          "id": "kb_md_2026_en_s10_1",
+          "section": "10.1",
+          "section_title": "Camping: EC Village — Prezentare generală",
+          "topic": "camping",
+          "score": 0.030331
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 10,
+      "completeness": 10,
+      "tone": 8,
+      "language_compliance": 10,
+      "concision": 7,
+      "overall": 9,
+      "rationale": "The answer is fully grounded in the source chunks, addressing all relevant details about Electric Castle's opening and closing times. The tone is appropriate for a festival assistant, maintaining friendliness without being overly cheerful or robotic. Despite some minor verbosity, the language used matches the requested 'en' language. The single biggest weakness is that it could be more concise while still providing all necessary information."
+    }
+  },
+  {
+    "case": {
+      "id": "rules_alcohol_ro",
+      "query": "Pot să aduc bere în camping?",
+      "lang": "ro",
+      "expected_topics": [
+        "rules",
+        "camping"
+      ]
+    },
+    "answer": {
+      "query": "Pot să aduc bere în camping?",
+      "lang": "ro",
+      "topic": null,
+      "answer": "Nu, nu ai voie să aduci alcooluri în camping.",
+      "sources": [
+        {
+          "id": "kb_md_2026_ro_s14",
+          "section": "14",
+          "section_title": "Reguli importante",
+          "topic": "rules",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_ro_s12",
+          "section": "12",
+          "section_title": "Facilități în festival",
+          "topic": "facilities",
+          "score": 0.032002
+        },
+        {
+          "id": "kb_md_2026_ro_s10_2",
+          "section": "10.2",
+          "section_title": "Camping: EC Village — Ce poți aduce în camping",
+          "topic": "camping",
+          "score": 0.031545
+        },
+        {
+          "id": "kb_md_2026_ro_s9_5",
+          "section": "9.5",
+          "section_title": "Cum ajungi la festival — Cu mașina",
+          "topic": "transport",
+          "score": 0.03055
+        },
+        {
+          "id": "kb_md_2026_ro_s21",
+          "section": "21",
+          "section_title": "Budget și bani",
+          "topic": "budget",
+          "score": 0.02971
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 10,
+      "completeness": 9,
+      "tone": 8,
+      "language_compliance": 10,
+      "concision": 7,
+      "overall": 8,
+      "rationale": "The answer is grounded and complete, addressing the question about bringing alcohol to the camping area. However, it could be more concise by removing some of the redundant information from source chunks [1] and focusing solely on the relevant points for the user's query."
+    }
+  },
+  {
+    "case": {
+      "id": "cashless_basics_en",
+      "query": "How does the cashless system work and can I get my money back?",
+      "lang": "en",
+      "expected_topics": [
+        "cashless"
+      ]
+    },
+    "answer": {
+      "query": "How does the cashless system work and can I get my money back?",
+      "lang": "en",
+      "topic": null,
+      "answer": "The cashless system uses RFID wristbands that you top up online or on-site before the festival. You use these for all purchases including food, drinks, and merchandise. For refunds, there are different fees and timeframes depending on how you used your funds—on-site top-ups have specific procedures with refund limits.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s8",
+          "section": "8",
+          "section_title": "Sistem cashless",
+          "topic": "cashless",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_en_s20",
+          "section": "20",
+          "section_title": "Experiența de food și băuturi",
+          "topic": "food",
+          "score": 0.032522
+        },
+        {
+          "id": "kb_md_2026_en_s6",
+          "section": "6",
+          "section_title": "Cumpărare și personalizare",
+          "topic": "tickets",
+          "score": 0.031258
+        },
+        {
+          "id": "kb_md_2026_en_s17",
+          "section": "17",
+          "section_title": "Viața în festival",
+          "topic": "experience",
+          "score": 0.031258
+        },
+        {
+          "id": "kb_md_2026_en_s7",
+          "section": "7",
+          "section_title": "Acces și intrare",
+          "topic": "tickets",
+          "score": 0.03125
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 9,
+      "completeness": 8,
+      "tone": 7,
+      "language_compliance": 10,
+      "concision": 6,
+      "overall": 7,
+      "rationale": "The answer is well-grounded and addresses the question comprehensively. However, it could be more concise to avoid redundancy and include only essential information."
+    }
+  },
+  {
+    "case": {
+      "id": "ambiguous_first_time_en",
+      "query": "I've never been to EC, where do I even start?",
+      "lang": "en",
+      "expected_topics": [
+        "overview",
+        "tips"
+      ]
+    },
+    "answer": {
+      "query": "I've never been to EC, where do I even start?",
+      "lang": "en",
+      "topic": null,
+      "answer": "For your first visit, it’s best to arrive a day or night in advance so you can explore before the crowds get too big. Reserve your transport in advance and use the official app for the schedule. Bring water and plan some breaks during the day. Remember, nighttime can be cold and exhausting, so prepare accordingly.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s9_4",
+          "section": "9.4",
+          "section_title": "Cum ajungi la festival — CFR",
+          "topic": "transport",
+          "score": 0.031778
+        },
+        {
+          "id": "kb_md_2026_en_s22",
+          "section": "22",
+          "section_title": "Recomandări de experiență",
+          "topic": "tips",
+          "score": 0.031498
+        },
+        {
+          "id": "kb_md_2026_en_s6",
+          "section": "6",
+          "section_title": "Cumpărare și personalizare",
+          "topic": "tickets",
+          "score": 0.031099
+        },
+        {
+          "id": "kb_md_2026_en_s7",
+          "section": "7",
+          "section_title": "Acces și intrare",
+          "topic": "tickets",
+          "score": 0.031054
+        },
+        {
+          "id": "kb_md_2026_en_s9_2",
+          "section": "9.2",
+          "section_title": "Cum ajungi la festival — Trenuri EC",
+          "topic": "transport",
+          "score": 0.031054
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 10,
+      "completeness": 9,
+      "tone": 8,
+      "language_compliance": 10,
+      "concision": 7,
+      "overall": 8,
+      "rationale": "The answer is well-grounded and addresses the user's question comprehensively. However, it could be more concise by removing some redundant information and focusing on key points."
+    }
+  },
+  {
+    "case": {
+      "id": "out_of_scope_en",
+      "query": "What's the weather forecast for July 17?",
+      "lang": "en",
+      "expected_topics": []
+    },
+    "answer": {
+      "query": "What's the weather forecast for July 17?",
+      "lang": "en",
+      "topic": null,
+      "answer": "I'm not sure, check closer to the festival for the most accurate weather forecast.",
+      "sources": [
+        {
+          "id": "kb_md_2026_en_s2",
+          "section": "2",
+          "section_title": "Când și unde are loc",
+          "topic": "dates_location",
+          "score": 0.032787
+        },
+        {
+          "id": "kb_md_2026_en_s15",
+          "section": "15",
+          "section_title": "Copii și minori",
+          "topic": "children",
+          "score": 0.032002
+        },
+        {
+          "id": "kb_md_2026_en_s0",
+          "section": "0",
+          "section_title": "Introducere",
+          "topic": "overview",
+          "score": 0.031054
+        },
+        {
+          "id": "kb_md_2026_en_s18",
+          "section": "18",
+          "section_title": "Ce merită pregătit înainte",
+          "topic": "packing",
+          "score": 0.029911
+        },
+        {
+          "id": "kb_md_2026_en_s23",
+          "section": "23",
+          "section_title": "Pentru cine e festivalul",
+          "topic": "audience",
+          "score": 0.028665
+        }
+      ]
+    },
+    "scores": {
+      "groundedness": 2,
+      "completeness": 3,
+      "tone": 8,
+      "language_compliance": 10,
+      "concision": 4,
+      "overall": 5,
+      "rationale": "The answer is not grounded enough as it does not provide a weather forecast for July 17. The tone is friendly and appropriate, but the answer is vague since it only mentions checking closer to the festival for an accurate forecast rather than providing one. The language compliance is perfect, and the concision could be improved by including more specific details about the weather forecast."
+    }
+  }
+]

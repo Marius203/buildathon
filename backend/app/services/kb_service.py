@@ -95,7 +95,8 @@ async def process_document(file_content: bytes, filename: str) -> str:
     return url
 
 async def process_image(file_content: bytes, filename: str, file_type: str) -> str:
+    # Am sters al 4-lea argument!
     url = await upload_to_uploadthing(
-        file_content, filename, file_type, settings.UPLOADTHING_BUCKET_IMAGES
+        file_content, filename, file_type
     )
     return url

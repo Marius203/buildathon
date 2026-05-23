@@ -246,7 +246,8 @@ function AdminPanel({ onClose }) {
 
   async function handleExport() {
     try {
-      const r = await fetch(`${API_URL}/admin/export`, {
+      // CORECTAT: URL-ul include /stats/export
+      const r = await fetch(`${API_URL}/admin/stats/export`, {
         headers: { authorization: `Bearer ${getToken()}` },
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -267,9 +268,11 @@ function AdminPanel({ onClose }) {
     setUploading(true);
     setUploadMsg("");
     const form = new FormData();
-    Array.from(files).forEach(f => form.append("files", f));
+    // CORECTAT: Numele câmpului trebuie să fie "file" ca să se potrivească cu backend-ul FastAPI
+    Array.from(files).forEach(f => form.append("file", f));
     try {
-      const r = await fetch(`${API_URL}/admin/upload`, {
+      // CORECTAT: URL-ul include /kb/upload
+      const r = await fetch(`${API_URL}/admin/kb/upload`, {
         method: "POST",
         headers: { authorization: `Bearer ${getToken()}` },
         body: form,
@@ -288,9 +291,8 @@ function AdminPanel({ onClose }) {
 
   const statCards = stats ? [
     { label: "Total mesaje",      value: stats.total_messages   ?? "—", icon: "💬" },
-    { label: "Sesiuni active",    value: stats.active_sessions  ?? "—", icon: "👥" },
-    { label: "Utilizatori",       value: stats.total_users      ?? "—", icon: "🙋" },
-    { label: "Întrebări azi",     value: stats.messages_today   ?? "—", icon: "📅" },
+    { label: "Sesiuni active",    value: stats.total_conversations ?? "—", icon: "👥" }, // Adaptat dupa response-ul de la backend
+    { label: "Fără Răspuns",       value: stats.unanswered_count ?? "—", icon: "⚠️" }, // Adaptat dupa response-ul de la backend
   ] : [];
 
   const topQuestions = stats?.top_questions ?? [];
@@ -404,7 +406,7 @@ function AdminPanel({ onClose }) {
                 onDrop={e => { e.preventDefault(); setFiles(e.dataTransfer.files); setUploadMsg(""); }}
               >
                 <input
-                  ref={fileInputRef} type="file" multiple
+                  ref={fileInputRef} type="file"
                   accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json"
                   style={{ display: "none" }}
                   onChange={e => { setFiles(e.target.files); setUploadMsg(""); }}

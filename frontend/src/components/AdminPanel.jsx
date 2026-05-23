@@ -11,6 +11,7 @@ const TABS = [
   ["favorites",  "⭐ Favorite"],
   ["unanswered", "⚠️ Fără Răspuns"],
   ["upload",     "📁 Upload"],
+  ["broadcast",  "📢 Broadcast"],
 ];
 
 
@@ -125,6 +126,92 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+
+function BroadcastTab({ cardStyle }) {
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult]   = useState(null);
+
+  async function handleBroadcast() {
+    if (!message.trim()) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const token = localStorage.getItem("ec_token");
+      const r = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8001"}/admin/broadcast`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ message: message.trim() }),
+      });
+      const d = await r.json();
+      if (r.ok) {
+        setResult({ ok: true, text: `✅ Trimis către ${d.sent_to} useri` });
+        setMessage("");
+      } else {
+        setResult({ ok: false, text: `❌ ${d.detail}` });
+      }
+    } catch (e) {
+      setResult({ ok: false, text: "❌ Eroare de conexiune" });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div style={cardStyle}>
+        <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "6px", letterSpacing: "1px" }}>
+          📢 TRIMITE NOTIFICARE TUTUROR USERILOR
+        </h3>
+        <p style={{ fontSize: "13px", color: "#666", marginBottom: "16px" }}>
+          Mesajul va apărea în panoul de notificări al fiecărui user înregistrat.
+        </p>
+        <textarea
+          rows={4}
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          placeholder="Ex: Porțile se deschid la 16:00! Ne vedem la Electric Castle 🏰"
+          style={{ width: "100%", padding: "12px 14px", border: "2px solid var(--ec-black)", fontSize: "14px", fontFamily: "Inter, sans-serif", resize: "vertical", outline: "none", boxSizing: "border-box", marginBottom: "12px" }}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: "12px", color: message.length > 200 ? "var(--ec-red)" : "#888" }}>
+            {message.length}/200 caractere
+          </span>
+          <button
+            onClick={handleBroadcast}
+            disabled={sending || !message.trim() || message.length > 200}
+            style={{
+              background: sending || !message.trim() ? "#ccc" : "var(--ec-black)",
+              color: "#fff",
+              border: "2px solid var(--ec-black)",
+              boxShadow: sending || !message.trim() ? "none" : "4px 4px 0 #555",
+              padding: "12px 28px",
+              fontFamily: "Oswald, sans-serif",
+              fontSize: "15px",
+              fontWeight: "bold",
+              letterSpacing: "1px",
+              cursor: sending || !message.trim() ? "not-allowed" : "pointer",
+            }}
+          >
+            {sending ? "SE TRIMITE..." : "📢 TRIMITE TUTUROR"}
+          </button>
+        </div>
+        {result && (
+          <div style={{ marginTop: "12px", padding: "10px 14px", background: result.ok ? "#f0fff4" : "#fff0f0", border: `1px solid ${result.ok ? "#86efac" : "#fecaca"}`, fontWeight: "bold", fontSize: "13px", color: result.ok ? "#166534" : "var(--ec-red)" }}>
+            {result.text}
+          </div>
+        )}
+      </div>
+
+      <div style={{ ...cardStyle, background: "#fffbeb", border: "1px solid #fcd34d" }}>
+        <p style={{ fontSize: "13px", color: "#92400e", margin: 0 }}>
+          ⚠️ <strong>Atenție:</strong> Mesajul se trimite imediat tuturor userilor înregistrați. Nu există undo.
+        </p>
+      </div>
     </div>
   );
 }
@@ -417,6 +504,10 @@ export default function AdminPanel({ onClose }) {
               cardStyle={cardStyle}
               onRefresh={loadUnanswered}
             />
+          )}
+
+          {tab === "broadcast" && (
+            <BroadcastTab cardStyle={cardStyle} />
           )}
 
           {tab === "upload" && (

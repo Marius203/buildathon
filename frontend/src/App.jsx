@@ -34,9 +34,8 @@ export default function App() {
   const [messages, setMessages]           = useState([
     { role: "ai", text: "Hei! 👋 Sunt asistentul tău EC. Prima dată la festival? Spune-mi cu ce te pot ajuta – transport, cazare, buget, muzică sau orice altceva!" },
   ]);
-  const [showAuth, setShowAuth]     = useState(false);
-  const [showAdmin, setShowAdmin]   = useState(false);
-  const [activeNotif, setActiveNotif] = useState(null);
+  const [showAuth, setShowAuth]   = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [loggedIn, setLoggedIn]   = useState(!!getToken());
   const messagesEndRef            = useRef(null);
   const msgIndexRef               = useRef(0);
@@ -60,15 +59,26 @@ export default function App() {
           const existingIds = new Set(prev.map(n => n.id));
           const newNotifs = unread
             .filter(n => !existingIds.has(n._id))
-            .map(n => ({
-              id: n._id,
-              text: `💬 Răspuns la întrebarea ta: "${n.question.slice(0, 40)}..."`,
-              answer: n.answer,
-              question: n.question,
-              time: "acum",
-              read: false,
-              fromAdmin: true,
-            }));
+            .map(n => {
+              if (n.is_broadcast) {
+                return {
+                  id: n._id,
+                  text: `📢 ${n.broadcast_message}`,
+                  time: "acum",
+                  read: false,
+                  fromAdmin: false,
+                };
+              }
+              return {
+                id: n._id,
+                text: `💬 Răspuns la întrebarea ta: "${(n.question || "").slice(0, 40)}..."`,
+                answer: n.answer,
+                question: n.question,
+                time: "acum",
+                read: false,
+                fromAdmin: true,
+              };
+            });
           if (newNotifs.length === 0) return prev;
           setUnread(u => u + newNotifs.length);
           return [...newNotifs, ...prev];
@@ -193,7 +203,7 @@ export default function App() {
         loggedIn={loggedIn}
       >
         {notifOpen && (
-          <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)} onNotifClick={n => { setNotifOpen(false); setActiveNotif(n); }}/>
+          <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)}/>
         )}
       </NavBar>
 

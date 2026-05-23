@@ -212,6 +212,35 @@ async def mark_notification_read(notif_id: str, user=Depends(get_current_user)):
     )
     return {"message": "Marked as read"}
 
+@router.post("/broadcast")
+async def broadcast_notification(body: dict, admin=Depends(get_current_admin)):
+    db = get_db()
+    message = body.get("message", "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Mesajul nu poate fi gol")
+
+    # Ia toti userii din DB
+    users = await db.users.distinct("email")
+    if not users:
+        return {"message": "Nu există useri înregistrați", "sent_to": 0}
+
+    now = datetime.datetime.utcnow()
+    notifs = [
+        {
+            "user_email": email,
+            "question": None,
+            "answer": None,
+            "broadcast_message": message,
+            "is_broadcast": True,
+            "read": False,
+            "created_at": now,
+        }
+        for email in users
+    ]
+    await db.notifications.insert_many(notifs)
+    return {"message": "Broadcast trimis cu succes", "sent_to": len(users)}
+
+
 @router.get("/stats/export")
 async def export_stats(user=Depends(get_current_admin)):
     db = get_db()

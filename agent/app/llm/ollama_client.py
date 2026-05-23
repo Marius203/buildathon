@@ -9,9 +9,9 @@ from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
 import httpx
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
-load_dotenv()
+load_dotenv(find_dotenv(usecwd=True))
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MAIN_MODEL = os.getenv("OLLAMA_MAIN_MODEL", "qwen2.5:14b-instruct")

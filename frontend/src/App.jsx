@@ -4,8 +4,7 @@ import bubbleLogo from "./images/logo.jpg";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_URL = "http://localhost:8000";
-const POLL_INTERVAL = 30000; // 30 secunde
+const API_URL = "http://localhost:8001";
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -835,6 +834,13 @@ export default function App() {
     const userMsg = (overrideText !== undefined ? overrideText : input).trim();
     if (!userMsg) return;
     setInput("");
+
+    // Capture prior turns BEFORE pushing the new user message, and skip the
+    // initial canned greeting so the model isn't biased by it.
+    const history = messages
+      .filter((m, i) => !(i === 0 && m.role === "ai"))
+      .map(m => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
+
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
     setTyping(true);
     try {
@@ -842,8 +848,15 @@ export default function App() {
       if (!authed) throw new Error("Auth failed");
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "authorization": `Bearer ${getToken()}` },
-        body: JSON.stringify({ session_id: getSessionId(), message: userMsg }),
+        headers: {
+          "Content-Type": "application/json",
+          "authorization": `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          session_id: getSessionId(),
+          message: userMsg,
+          history,
+        }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       if (!res.body) throw new Error("No response body");

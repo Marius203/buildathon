@@ -1,6 +1,8 @@
-# secrets
+# secrets — centralized .env at repo root; never commit any .env anywhere
 .env
 **/.env
+!.env.example
+!**/.env.example
 
 # python
 __pycache__/

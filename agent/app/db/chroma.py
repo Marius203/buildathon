@@ -13,9 +13,9 @@ from pathlib import Path
 import chromadb
 from chromadb.api import ClientAPI
 from chromadb.api.models.Collection import Collection
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
-load_dotenv()
+load_dotenv(find_dotenv(usecwd=True))
 
 KB_COLLECTION = "kb_chunks"
 

@@ -27,9 +27,8 @@ agent/
 │   ├── chroma/             # Chroma persist (gitignored)
 │   ├── mock/               # staged chunk JSON (RO + EN)
 │   └── eval/               # test_cases.json + timestamped run results
-├── requirements.txt
-├── .env.example
-└── .env                    # gitignored
+└── requirements.txt
+# env vars are loaded from the repo-root .env (../.env)
 ```
 
 ## Prerequisites
@@ -57,8 +56,9 @@ From `agent/`:
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env
-# edit .env to fill in MONGODB_URI and GOOGLE_MAPS_API_KEY when you have them
+# Env vars come from the repo-root .env. If missing:
+#   copy ..\.env.example ..\.env
+# then edit it to fill MONGODB_URI, GOOGLE_MAPS_API_KEY, etc.
 ```
 
 > Note: there is also a `.venv` at the repo root from earlier development. Either reuse it (`..\.venv\Scripts\python`) or create a fresh one inside `agent/` as shown above — pick one and stay consistent.

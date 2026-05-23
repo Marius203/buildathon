@@ -17,6 +17,7 @@ from app.agent.answerer import answer as run_answer, answer_stream_async as run_
 from app.db.chroma import get_kb_collection
 from app.embeddings.ollama import OLLAMA_BASE_URL
 from app.lib.bm25_index import build_indexes, get_store
+from app.llm.claude_client import detect_language
 from app.tools.search_kb import search_kb
 
 
@@ -101,11 +102,17 @@ async def search(req: SearchRequest) -> SearchResponse:
     )
 
 
+class HistoryMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class AnswerRequest(BaseModel):
     query: str = Field(min_length=1)
     lang: Literal["ro", "en"] = "en"
     topic: str | None = None
     k: int = Field(default=3, ge=1, le=20)
+    history: list[HistoryMessage] = Field(default_factory=list)
 
 
 class AnswerSource(BaseModel):
@@ -128,16 +135,32 @@ class AnswerResponse(BaseModel):
 
 @app.post("/answer/stream")
 async def answer_stream(req: AnswerRequest) -> StreamingResponse:
+    history = [m.model_dump() for m in req.history]
+
     async def generate():
-        async for event in run_answer_stream(req.query, lang=req.lang, topic=req.topic, k=req.k):
+        async for event in run_answer_stream(req.query, lang=req.lang, topic=req.topic, k=req.k, history=history):
             yield json.dumps(event) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
+class DetectLangRequest(BaseModel):
+    text: str = Field(min_length=1)
+
+
+class DetectLangResponse(BaseModel):
+    lang: Literal["ro", "en"]
+
+
+@app.post("/detect-lang", response_model=DetectLangResponse)
+async def detect_lang(req: DetectLangRequest) -> DetectLangResponse:
+    return DetectLangResponse(lang=detect_language(req.text))
+
+
 @app.post("/answer", response_model=AnswerResponse)
 async def answer(req: AnswerRequest) -> AnswerResponse:
-    result = run_answer(req.query, lang=req.lang, topic=req.topic, k=req.k)
+    history = [m.model_dump() for m in req.history]
+    result = run_answer(req.query, lang=req.lang, topic=req.topic, k=req.k, history=history)
     return AnswerResponse(
         query=result["query"],
         lang=result["lang"],

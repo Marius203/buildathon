@@ -1,4 +1,10 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
+
+# Repo root = backend/app/config.py -> backend/app -> backend -> repo
+ROOT_ENV = Path(__file__).resolve().parents[2] / ".env"
+
 
 class Settings(BaseSettings):
     MONGODB_URI: str
@@ -12,6 +18,8 @@ class Settings(BaseSettings):
     UPLOADTHING_APP_ID: str = "gskdonr2lr"
 
     class Config:
-        env_file = ".env"
+        env_file = str(ROOT_ENV)
+        extra = "ignore"  # root .env carries agent vars too
+
 
 settings = Settings()

@@ -1,287 +1,278 @@
-import { useState } from "react";
+import { useState, useMemo, useRef } from "react";
 
 const FAQ_DATA = [
   {
-    category: "transport",
-    icon: "🚌",
-    q: "Cum ajung la Electric Castle?",
-    a: (
-      <>
-        <p>Ai mai multe opțiuni să ajungi la Bonțida:</p>
-        <ul>
-          <li><strong>Shuttle din Cluj-Napoca</strong> — cea mai comodă variantă. Plecări regulate din puncte fixe (Parcul Central, Iulius Mall). Costă ~50–70 RON dus-întors. Rezervă imediat după ce cumperi biletul — se termină rapid!</li>
-          <li><strong>Mașina personală</strong> — parcare plătită disponibilă, dar drumul poate fi blocat seara. Calculează timp suplimentar.</li>
-          <li><strong>Carpool</strong> — grupurile de Facebook ale EC sunt active. Găsești cu ușurință cu cine să mergi.</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fff8e1", borderLeft: "3px solid #f59e0b", fontSize: 14 }}>
-          ⚡ <strong>Sfat pro:</strong> Shuttle-urile din ultimele zile se epuizează primele. Rezervă dus-întors de la început.
-        </p>
-      </>
-    ),
-  },
-  {
-    category: "wristband",
-    icon: "💳",
-    q: "Ce este brățara cashless și cum funcționează?",
-    a: (
-      <>
-        <p>Electric Castle funcționează <strong>100% cashless</strong>. La intrare primești o brățară cu cip RFID pe care o încarci cu bani.</p>
-        <ul>
-          <li>Încarci bani din aplicația EC sau de la stațiile fizice din festival</li>
-          <li>Plătești la orice stand atingând brățara de terminal</li>
-          <li>Soldul rămas la final se poate <strong>rambursa online</strong> în 30 de zile</li>
-          <li>Dacă pierzi brățara, o poți bloca din aplicație</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fff8e1", borderLeft: "3px solid #f59e0b", fontSize: 14 }}>
-          ⚡ <strong>Sfat pro:</strong> Încarcă mai mult decât crezi că cheltuiești. Mai bine ceri rambursare decât stai la coadă să reîncarci la 2 noaptea.
-        </p>
-      </>
-    ),
-  },
-  {
-    category: "packing",
-    icon: "🎒",
-    q: "Ce să iau cu mine la festival?",
-    a: (
-      <>
-        <p><strong>Absolut necesare:</strong></p>
-        <ul>
-          <li>🥾 Cizme de cauciuc sau ghete impermeabile — non-negociabil</li>
-          <li>☔ Poncho sau geacă impermeabilă (ponchourile din festival costă triplu)</li>
-          <li>🔋 Powerbank mare — bateria nu ține 4 zile de fotografiat și navigat</li>
-          <li>🎫 Bilet + act de identitate valid</li>
-          <li>💊 Medicamente personale (la farmacie ești departe)</li>
-        </ul>
-        <p style={{ marginTop: 10 }}><strong>Recomandate:</strong></p>
-        <ul>
-          <li>Lanternă frontală pentru camping noaptea</li>
-          <li>Cremă de soare + insecticid</li>
-          <li>Husă impermeabilă pentru telefon</li>
-          <li>Dopuri de urechi (câteva ore de somn sunt posibile cu ele)</li>
-          <li>Pungă de plastic mare pentru bocanci noroioși în cort</li>
-        </ul>
-      </>
-    ),
-  },
-  {
-    category: "camping",
-    icon: "⛺",
-    q: "Pot campa la festival? Ce variante de cazare există?",
-    a: (
-      <>
-        <p>Campingul e parte esențială din experiența EC. Opțiunile tale:</p>
-        <ul>
-          <li><strong>Camping standard</strong> — aduci propriul cort, cel mai ieftin, comunitate mare</li>
-          <li><strong>Glamping</strong> — corturi premium pre-instalate cu paturi. Se rezervă rapid, costă mai mult</li>
-          <li><strong>Hotel în Cluj-Napoca</strong> — confort maxim, dar 30km distanță și naveta zilnică cu shuttle</li>
-          <li><strong>Cazări în Bonțida</strong> — câteva pensiuni în sat, raritate</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fff8e1", borderLeft: "3px solid #f59e0b", fontSize: 14 }}>
-          ⚡ <strong>Sfat pro:</strong> Glamping-ul se rezervă în câteva ore de la lansarea biletelor. Dacă îl vrei, fii pregătit.
-        </p>
-      </>
-    ),
-  },
-  {
-    category: "tickets",
+    category: "Tickets & Personalization",
     icon: "🎫",
-    q: "Ce tipuri de bilete există?",
-    a: (
-      <>
-        <p>Biletele principale pentru Electric Castle:</p>
-        <ul>
-          <li><strong>Abonament 4 zile</strong> — acces complet la toate zilele. Cea mai populară și mai rentabilă opțiune.</li>
-          <li><strong>Bilet zilnic</strong> — dacă poți merge doar 1-2 zile. Disponibilitate limitată.</li>
-          <li><strong>Pachet cu camping</strong> — abonament + loc de camping inclus.</li>
-          <li><strong>VIP</strong> — zone exclusive, toalete separate, spații de relaxare dedicate, mai puțin aglomerat.</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fee2e2", borderLeft: "3px solid #ef4444", fontSize: 14 }}>
-          ⚠️ <strong>Atenție:</strong> Cumpără bilete <strong>exclusiv de pe site-ul oficial</strong>. Revânzătorii vând bilete false.
-        </p>
-      </>
-    ),
+    items: [
+      { q: "Ce tipuri de bilete există?", a: "Abonament 4 zile (cel mai popular), bilet zilnic, pachet cu camping inclus și VIP cu zone exclusive, toalete separate și spații dedicate. Cumpără exclusiv de pe site-ul oficial — revânzătorii vând bilete false." },
+      { q: "Cum activez brățara cashless?", a: "Primești brățara la intrare la schimbul biletului. O activezi în contul tău EC online, pe pagina cashless. După înregistrare poți încărca bani și vedea soldul. Poți face asta înainte sau după ce primești brățara." },
+      { q: "Pot transfera biletul altcuiva?", a: "Da, biletele pot fi transferate prin platforma oficială EC. Accesează contul tău, secțiunea My Tickets, și folosește opțiunea de transfer. Nu transfera prin intermediari." },
+      { q: "Cum recuperez banii rămași pe brățară?", a: "Rambursarea online este gratuită și se poate face în 30 de zile după festival. Dacă alegi rambursarea pe loc, se aplică un comision de 3%." },
+    ],
   },
   {
-    category: "rules",
-    icon: "🚫",
-    q: "Ce nu este permis la festival?",
-    a: (
-      <>
-        <p><strong>Interzis la intrare:</strong></p>
-        <ul>
-          <li>Sticle de sticlă sau recipiente metalice cu margini ascuțite</li>
-          <li>Droguri de orice fel — există controale la intrare</li>
-          <li>Animale de companie (chiar și în zona de camping)</li>
-          <li>Generatoare personale</li>
-          <li>Drone fără acreditare specială</li>
-          <li>Arme sau obiecte contondente</li>
-        </ul>
-        <p style={{ marginTop: 10 }}><strong>Ce poți aduce:</strong> alimente și băuturi non-alcoolice în cantități rezonabile, umbrele, aparat foto fără obiectiv detașabil, rucsacuri.</p>
-      </>
-    ),
+    category: "Transport",
+    icon: "🚌",
+    items: [
+      { q: "Cum ajung la festival din Cluj-Napoca?", a: "Trenurile EC sunt cea mai rapidă opțiune — pleacă din Gara Mică (Cluj-Napoca) spre Jucu. Există și autobuze non-stop din Iulius Mall și Expo Transilvania. Biletele se cumpără online pe entertix.ro/ec-transport." },
+      { q: "Care este programul trenurilor EC?", a: "Miercuri 16 iulie: 17:55, 19:15. Joi–vineri: 16:28, 17:55, 18:27, 19:15, 20:30. Sâmbătă: 14:56, 16:28, 17:55, 18:27, 19:15, 20:30. Duminică: 14:56, 16:28, 17:55, 19:15." },
+      { q: "Pot veni cu mașina personală?", a: "Da, există parcare dedicată la Iulius Mall de unde poți lua autobuzul spre festival. Drumul spre Bonțida poate fi blocat în orele de vârf — calculează timp suplimentar. Nu se recomandă parcarea la fața locului." },
+      { q: "Există transport de la aeroport?", a: "Nu există shuttle direct de la aeroport spre festival. Ia un taxi/Uber din aeroport spre Cluj-Napoca, apoi folosești trenul EC sau autobuzul non-stop spre festival." },
+    ],
   },
   {
-    category: "lineup",
-    icon: "🎵",
-    q: "Cum funcționează programul artiștilor?",
-    a: (
-      <>
-        <p>Câteva lucruri esențiale despre program:</p>
-        <ul>
-          <li>Programul complet apare cu câteva zile înainte pe site și în aplicație</li>
-          <li>Headlinerii cântă noaptea — uneori și după miezul nopții</li>
-          <li>Programele se suprapun des — imposibil să prinzi tot, prioritizează din timp</li>
-          <li>Scenele sunt răspândite pe proprietate — calculează 10-15 minute de mers între ele</li>
-          <li>Schimbările de ultim moment există — verifică aplicația în fiecare dimineață</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fff8e1", borderLeft: "3px solid #f59e0b", fontSize: 14 }}>
-          ⚡ <strong>Sfat pro:</strong> Fă o listă cu top 5 artiști musts și construiește restul programului în jurul lor.
-        </p>
-      </>
-    ),
+    category: "Camping & Cazare",
+    icon: "⛺",
+    items: [
+      { q: "Ce variante de cazare există?", a: "Camping standard (aduci propriul cort), Glamping (corturi premium pre-instalate cu paturi, se rezervă rapid), hotel în Cluj-Napoca (30km distanță, naveta zilnică cu shuttle) sau pensiuni în Bonțida (raritate)." },
+      { q: "De când este deschis campingul?", a: "Campingul este deschis din luni înainte de festival. Porțile festivalului se deschid conform programului oficial. EC Village funcționează 24 de ore din 24 în timpul festivalului." },
+      { q: "Unde sunt dușurile și toaletele?", a: "Dușurile sunt doar în centrul campingului. Toaletele se găsesc lângă scena Backyard, între Hangar și Royal Grill, în spatele Ping Pong Stage, între Main Stage și deal, și în zona de camping." },
+      { q: "Pot veni cu rulota sau cortul auto?", a: "Există zone dedicate Car Camping și RV Camping, disponibile la cumpărarea biletului. Verifică pagina de bilete pentru prețuri și disponibilitate." },
+    ],
   },
   {
-    category: "weather",
-    icon: "🌧️",
-    q: "Ce fac dacă plouă? (și plouă mereu)",
-    a: (
-      <>
-        <p>Ploaia la Electric Castle e o certitudine, nu o surpriză. Castelul Bánffy = glod garantat.</p>
-        <ul>
-          <li>Cizmele de cauciuc nu sunt opționale — sunt obligatorii morale</li>
-          <li>Ponchourile din festival costă de 3x mai mult — aduce-l de acasă</li>
-          <li>Husă impermeabilă pentru telefon — esențială dacă plouă puternic</li>
-          <li>Aleile devin noroioase noaptea — mișcă-te cu atenție</li>
-          <li>Cortul tău trebuie să fie impermeabil — verifică înainte să pleci</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#f0fdf4", borderLeft: "3px solid #22c55e", fontSize: 14 }}>
-          🌈 Ploaia creează unele dintre cele mai memorabile momente la EC. Zâmbești mai mult decât te gândești!
-        </p>
-      </>
-    ),
+    category: "Festival Area",
+    icon: "🏰",
+    items: [
+      { q: "Care sunt scenele și ce muzică cântă?", a: "Main Stage (pop/mainstream/headlineri), Hangar by BT (alternativ/indie/rock), Booha by glo (house/disco/melodic techno), Hideout (afro house/organic house), The Beach (funk/soul/caribbean), Stables (techno/ro-minimal), Backyard (world music), Ping Pong (oldies/guilty pleasures), Camping Stage (de la 12:00)." },
+      { q: "Cum mă orientez în festival?", a: "Descarcă aplicația EC și salvează harta offline. Main Stage-ul e în capătul aleei centrale, Booha e în centru lângă EC Billboard, Hangar e după Hideout, Stables e în potcoava castelului. Calculează 10-15 minute de mers între scene." },
+      { q: "Unde găsesc ATM și puncte de încărcare?", a: "ATM-ul e imediat la intrare în festival, lângă magazinul oficial. Puncte de încărcare găsești la foodcourtul central, la activările sponsorilor, lângă roata panoramică, la copacii dintre roată și Booha și în EC Village." },
+      { q: "Există zone VIP?", a: "Da, VIP Lounge by Mastercard este lângă Main Stage. Există și platformă pentru persoane cu dizabilități în centrul spațiului de la Main Stage, deasupra sonoriștilor." },
+    ],
   },
   {
-    category: "meetup",
-    icon: "📍",
-    q: "Cum mă găsesc cu prietenii la festival?",
-    a: (
-      <>
-        <p>Semnalul mobil poate fi slab la orele de vârf (seara). Soluții practice:</p>
-        <ul>
-          <li>Stabilește <strong>puncte de întâlnire fixe</strong> înainte — "stânga de la Main Stage", "la intrarea în zona de camping"</li>
-          <li>Ore fixe de întâlnire dacă vă separați — nu depinde de apeluri</li>
-          <li>Descarcă harta festivalului <strong>offline</strong> în aplicație</li>
-          <li>Powerbank mereu încărcat — bateria descărcată = izolat</li>
-          <li>WhatsApp funcționează pe WiFi-ul festivalului chiar și fără semnal</li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fff8e1", borderLeft: "3px solid #f59e0b", fontSize: 14 }}>
-          ⚡ <strong>Sfat pro:</strong> Un steag mic, o pălărie colorată sau orice semn vizibil te face de găsit în mulțime.
-        </p>
-      </>
-    ),
+    category: "Cashless System",
+    icon: "💳",
+    items: [
+      { q: "Cum funcționează sistemul cashless?", a: "Electric Castle funcționează 100% cashless. Încarci bani pe brățara RFID din aplicația EC sau de la stațiile fizice din festival și plătești la orice stand atingând brățara de terminal." },
+      { q: "Unde pot încărca bani pe brățară?", a: "Credit Point-ul este doar la intrarea în festival, imediat după ce intri. Poți de asemenea încărca online din aplicația EC sau de pe site oricând." },
+      { q: "Ce se întâmplă dacă pierd brățara?", a: "O poți bloca imediat din aplicația EC pentru a proteja soldul. Contactează echipa EC la standul de informații pentru o brățară de înlocuire." },
+      { q: "Cum recuperez banii de pe brățară după festival?", a: "Rambursarea online este gratuită, disponibilă 30 de zile după festival. Rambursarea on-site are un comision de 3%. Accesează contul EC și mergi la secțiunea cashless." },
+    ],
   },
   {
-    category: "money",
-    icon: "💰",
-    q: "Cât costă în total un weekend la Electric Castle?",
-    a: (
-      <>
-        <p>Estimare realistă pentru 4 zile (per persoană, 2025):</p>
-        <ul>
-          <li>Bilet abonament: <strong>700–1.000 RON</strong></li>
-          <li>Transport (shuttle): <strong>50–120 RON</strong></li>
-          <li>Cazare — camping (cort propriu): <strong>100–150 RON</strong> / Glamping: <strong>600–1.200 RON</strong></li>
-          <li>Mâncare și băutură în festival: <strong>150–400 RON/zi</strong> (prețurile sunt ridicate)</li>
-          <li>Diverse (merchandise, urgențe): <strong>100–200 RON</strong></li>
-        </ul>
-        <p style={{ marginTop: 12, padding: "10px 14px", background: "#fff8e1", borderLeft: "3px solid #f59e0b", fontSize: 14 }}>
-          ⚡ <strong>Sfat economie:</strong> Mănâncă bine înainte să intri, hidratează-te cu apă de la stațiile gratuite din festival, evită cocktailurile premium.
-        </p>
-      </>
-    ),
+    category: "Mâncare & Băutură",
+    icon: "🍔",
+    items: [
+      { q: "Ce opțiuni de mâncare există?", a: "Există foodcourturi principale (Royal Food Court, Castle Food Court, Hillside, Hangar) cu zeci de food trucks: pizza, burgeri, tex-mex, vegan, ethnic food (thai, indian, asian), fine dining și dulciuri. Aproape toți vendorii au cel puțin un preparat vegan." },
+      { q: "Există opțiuni vegetariene/vegane?", a: "Da. Zero (complet vegan), Wok'n Roll (noodles cu legume), ThaiMe (dumpling veggies), Fumuri la Hangar (Mac & Cheese), Cimbru (sandwich halloumi). Taste of Transylvania are platou de vinete vegan și ciorbă de ciuperci." },
+      { q: "Unde pot lua micul dejun?", a: "RedBarn (spanac cremos cu ouă), UMami în castel (Huevos Rotos), Royal Breakfast by Lidl în camping (simplu și accesibil). Zona de camping are bar 24/24." },
+      { q: "Pot aduce mâncare și băutură de acasă?", a: "Poți aduce alimente și băuturi non-alcoolice în cantități rezonabile. Sticlele de sticlă și recipientele metalice cu margini ascuțite sunt interzise la intrare." },
+    ],
+  },
+  {
+    category: "Siguranță & Reguli",
+    icon: "🛡️",
+    items: [
+      { q: "Ce nu este permis la festival?", a: "Interzis: sticle de sticlă, recipiente metalice cu margini ascuțite, droguri, animale de companie, generatoare personale, drone fără acreditare, arme. Permis: alimente non-alcoolice, umbrele, aparat foto fără obiectiv detașabil." },
+      { q: "Care este numărul de urgență al festivalului?", a: "Safety Line: +40 741 069 443. Găsești echipa Red Team în tot festivalul, gata să ajute oricând." },
+      { q: "Ce fac dacă mă simt nesigur?", a: "Comandă un 'Angel Shot' la orice bar — cineva din echipă va veni să te ajute discret. Poți găsi Red Team-ul în orice colț al festivalului. Nu ești niciodată singur." },
+      { q: "Există servicii medicale?", a: "Da, First Aid se găsește lângă Main Stage, lângă Premium Parking, lângă scena Ping Pong by Burn, în potcoava castelului spre Backyard și în camping lângă dușuri." },
+    ],
+  },
+  {
+    category: "EC Village",
+    icon: "🏕️",
+    items: [
+      { q: "Ce este EC Village?", a: "EC Village este zona de camping și servicii a festivalului, deschisă din miercuri 15 iulie la 12:00. Include camping, glamping, dușuri, activări sponsori, Camping Stage și toate facilitățile pentru campatori." },
+      { q: "Ce activități sunt în camping?", a: "Body & Mind by World Class, Beach Volley by Men Expert, Bodega by Havana, Burn Energy Lounge, Fizz It Up by Schweppes, E.ON Charging Point, Chill Tent Aliat, Royal Breakfast și Persil Laundromat." },
+      { q: "Există locuri de blocare a bagajelor?", a: "Da, Lockere by Eurolife FFH sunt disponibile pe aleea de exit și la VIP. Nu există lockere în camping." },
+      { q: "Pot intra în festival cu mașina?", a: "Accesul auto este restricționat în festival. Există Uber/Taxi Pickup Point pe lângă camping spre podul din Bonțida și Go Bicycle Parking la intrarea în EC Village." },
+    ],
   },
 ];
 
-const CATEGORIES = [
-  { key: "all",       label: "Toate" },
-  { key: "transport", label: "🚌 Transport" },
-  { key: "camping",   label: "⛺ Cazare" },
-  { key: "packing",   label: "🎒 Bagaj" },
-  { key: "wristband", label: "💳 Cashless" },
-  { key: "lineup",    label: "🎵 Program" },
-  { key: "weather",   label: "🌧️ Vreme" },
-  { key: "money",     label: "💰 Buget" },
-];
+// Toate întrebările posibile pentru autocomplete
+const ALL_QUESTIONS = FAQ_DATA.flatMap(cat => cat.items.map(i => i.q));
+const ALL_TOPICS = FAQ_DATA.map(cat => cat.category);
+const SUGGESTIONS = [...ALL_TOPICS, ...ALL_QUESTIONS];
 
-function FaqItem({ item }) {
-  const [open, setOpen] = useState(false);
+function getCompletion(input) {
+  if (!input || input.length < 2) return "";
+  const lower = input.toLowerCase();
+  const match = SUGGESTIONS.find(s => s.toLowerCase().startsWith(lower));
+  if (!match) return "";
+  return match.slice(input.length); // doar sufixul
+}
+
+function SearchBar({ value, onChange, onSubmit }) {
+  const completion = getCompletion(value);
+  const inputRef = useRef(null);
+
+  function handleKeyDown(e) {
+    if ((e.key === "Tab" || e.key === "ArrowRight") && completion) {
+      e.preventDefault();
+      onChange(value + completion);
+    } else if (e.key === "Enter") {
+      onSubmit();
+    }
+  }
+
   return (
-    <div className="ec-faq-item">
-      <button
-        className={`ec-faq-question${open ? " ec-faq-question--open" : ""}`}
-        onClick={() => setOpen(o => !o)}
-      >
-        <span className="ec-faq-icon">{item.icon}</span>
-        <span style={{ flex: 1, textAlign: "left" }}>{item.q}</span>
-        <svg
-          className={`ec-faq-chevron${open ? " ec-faq-chevron--open" : ""}`}
-          width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2.5"
-        >
-          <path d="M6 9l6 6 6-6"/>
+    <div className="faq-search-wrap">
+      <div className="faq-search-box">
+        <svg className="faq-search-icon" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-      </button>
-      {open && (
-        <div className="ec-faq-answer">
-          {item.a}
+        <div className="faq-search-inner">
+          {/* Ghost text pentru autocomplete */}
+          {value && completion && (
+            <span className="faq-autocomplete-ghost" aria-hidden="true">
+              <span style={{ color: "transparent" }}>{value}</span>
+              <span className="faq-autocomplete-suffix">{completion}</span>
+            </span>
+          )}
+          <input
+            ref={inputRef}
+            className="faq-search-input"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={value ? "" : "Start here and search..."}
+            autoComplete="off"
+            spellCheck="false"
+          />
         </div>
+        {value && (
+          <button className="faq-search-clear" onClick={() => onChange("")}>✕</button>
+        )}
+        <button className="faq-search-btn" onClick={onSubmit}>
+          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+      {value && completion && (
+        <p className="faq-autocomplete-hint">Tab sau → pentru a completa</p>
       )}
     </div>
   );
 }
 
-export default function FaqPage() {
-  const [activeCategory, setActiveCategory] = useState("all");
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`faq-item ${open ? "faq-item--open" : ""}`}>
+      <button className="faq-item-q" onClick={() => setOpen(o => !o)}>
+        <span className="faq-item-arrow">{open ? "↑" : "↓"}</span>
+        <span>{q}</span>
+      </button>
+      {open && <div className="faq-item-a">{a}</div>}
+    </div>
+  );
+}
 
-  const filtered = activeCategory === "all"
-    ? FAQ_DATA
-    : FAQ_DATA.filter(item => item.category === activeCategory);
+function TopicView({ topic, onBack }) {
+  return (
+    <div className="faq-topic-view">
+      <button className="faq-back-btn" onClick={onBack}>
+        ← BACK TO MAIN TOPICS
+      </button>
+      <h2 className="faq-topic-title">
+        <span>{topic.icon}</span> {topic.category}
+      </h2>
+      <div className="faq-items-list">
+        {topic.items.map((item, i) => (
+          <FaqItem key={i} q={item.q} a={item.a} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SearchResults({ results, query }) {
+  if (results.length === 0) {
+    return (
+      <div className="faq-no-results">
+        <p>Nu am găsit rezultate pentru <strong>"{query}"</strong>.</p>
+        <p>Încearcă cu alt termen sau folosește asistentul AI 👇</p>
+      </div>
+    );
+  }
+  return (
+    <div className="faq-topic-view">
+      <p className="faq-results-count">{results.length} rezultate pentru <strong>"{query}"</strong></p>
+      <div className="faq-items-list">
+        {results.map((item, i) => (
+          <FaqItem key={i} q={item.q} a={item.a} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function FaqPage() {
+  const [search, setSearch]       = useState("");
+  const [submitted, setSubmitted] = useState("");
+  const [activeTopic, setActiveTopic] = useState(null);
+
+  function handleSubmit() {
+    setSubmitted(search);
+    setActiveTopic(null);
+  }
+
+  const searchResults = useMemo(() => {
+    if (!submitted) return [];
+    const q = submitted.toLowerCase();
+    const results = [];
+    FAQ_DATA.forEach(cat => {
+      cat.items.forEach(item => {
+        if (item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q)) {
+          results.push(item);
+        }
+      });
+    });
+    return results;
+  }, [submitted]);
+
+  const showSearch = submitted.length > 0;
+  const showTopic  = !showSearch && activeTopic !== null;
+  const showTopics = !showSearch && activeTopic === null;
 
   return (
-    <div>
-      <div className="ec-page-header">
-        <div className="ec-page-header__eyebrow">PRIMA DATĂ LA EC</div>
-        <h1 className="ec-page-header__title">
-          ÎNTREBĂRI<br/><span>FRECVENTE</span>
-        </h1>
-        <p className="ec-page-header__sub">
-          Tot ce trebuie să știi înainte de prima ta vizită la Electric Castle
-        </p>
+    <div className="faq-page">
+      <div className="faq-header">
+        <h1 className="faq-title">FAQ</h1>
+        <SearchBar
+          value={search}
+          onChange={v => { setSearch(v); if (!v) setSubmitted(""); }}
+          onSubmit={handleSubmit}
+        />
       </div>
 
-      <div className="ec-page-content">
-        <div className="ec-faq-category-filter">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={`ec-faq-category-btn${activeCategory === cat.key ? " ec-faq-category-btn--active" : ""}`}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
+      <div className="faq-body">
+        {showTopics && (
+          <>
+            <h2 className="faq-main-topics-title">MAIN TOPICS</h2>
+            <div className="faq-topics-list">
+              {FAQ_DATA.map((cat, i) => (
+                <button
+                  key={i}
+                  className="faq-topic-btn"
+                  onClick={() => setActiveTopic(cat)}
+                >
+                  <span className="faq-topic-btn-label">
+                    <span className="faq-topic-btn-icon">{cat.icon}</span>
+                    {cat.category}
+                  </span>
+                  <span className="faq-topic-btn-arrow">→</span>
+                </button>
+              ))}
+            </div>
+            <div className="faq-bottom-cta">
+              <p>Nu ai găsit răspunsul? Asistentul AI e în colțul dreapta-jos 👇</p>
+            </div>
+          </>
+        )}
 
-        <div className="ec-faq-list">
-          {filtered.map((item, i) => (
-            <FaqItem key={i} item={item}/>
-          ))}
-        </div>
+        {showTopic && (
+          <TopicView topic={activeTopic} onBack={() => setActiveTopic(null)} />
+        )}
 
-        <div className="ec-faq-cta">
-          <p>Nu ai găsit răspunsul?</p>
-          <p>Folosește asistentul AI din colțul dreapta-jos — e acolo pentru asta. 👇</p>
-        </div>
+        {showSearch && (
+          <SearchResults results={searchResults} query={submitted} />
+        )}
       </div>
     </div>
   );

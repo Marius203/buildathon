@@ -28,7 +28,7 @@ async def get_stats(user=Depends(get_current_admin)):
 
     pipeline_unanswered = [
         {"$unwind": "$messages"},
-        {"$match": {"messages.role": "assistant", "messages.answered": False}},
+        {"$match": {"messages.role": "user", "messages.answered": False}},
         {"$count": "total"}
     ]
     result = await db.conversations.aggregate(pipeline_unanswered).to_list(1)
@@ -126,7 +126,7 @@ async def get_unanswered(user=Depends(get_current_admin)):
     db = get_db()
     pipeline = [
         {"$unwind": "$messages"},
-        {"$match": {"messages.role": "assistant", "messages.answered": False}},
+        {"$match": {"messages.role": "user", "messages.answered": False}},
         {"$project": {"session_id": 1, "message": "$messages", "_id": 0}},
         {"$sort": {"message.timestamp": -1}},
         {"$limit": 50}

@@ -114,6 +114,17 @@ function formatText(text) {
     .replace(/\n/g, "<br/>");
 }
 
+// Cheap heuristic mirroring backend lang_detect: pick "ro" if RO diacritics or
+// common RO function words are present, else "en". Used only for the thinking
+// indicator label, the real classification happens on the agent (Claude).
+function detectLangClient(text) {
+  if (!text) return "en";
+  if (/[ăâîșțĂÂÎȘȚ]/.test(text)) return "ro";
+  const tokens = new Set((text.toLowerCase().match(/[a-zăâîșț]+/gu) || []));
+  const ro = ["si","cu","la","in","nu","ca","de","pe","ce","cum","sunt","pentru","din","pana","vreau","pot","trebuie","ajung","aduc","bilet","bilete","cazare","cort","salut","multumesc","buna"];
+  return ro.some(w => tokens.has(w)) ? "ro" : "en";
+}
+
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
 
 function AuthModal({ onClose, onSuccess }) {
@@ -759,7 +770,35 @@ function AiBubble({ chatOpen, bubbleHint, onToggle }) {
   );
 }
 
-function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown, onChip, messagesEndRef, onFeedback }) {
+const THINKING_PHRASES = {
+  ro: [
+    "mă gândesc",
+    "scotocesc prin info",
+    "caut prin notițe",
+    "pun cap la cap",
+    "verific detaliile",
+    "rumegă întrebarea",
+    "scormonesc baza",
+    "îmi amintesc",
+    "filtrez chestii",
+    "compun răspunsul",
+  ],
+  en: [
+    "thinking",
+    "digging through info",
+    "checking notes",
+    "putting it together",
+    "double-checking",
+    "pondering",
+    "rummaging around",
+    "recalling",
+    "filtering stuff",
+    "drafting reply",
+  ],
+};
+
+function ChatWindow({ messages, typing, typingLang, typingPhrase, input, onInputChange, onSend, onKeyDown, onChip, messagesEndRef, onFeedback }) {
+  const thinkingLabel = typingPhrase || (typingLang === "ro" ? "mă gândesc" : "thinking");
   return (
     <div className="ec-chat">
       <div className="ec-chat__header">
@@ -787,8 +826,16 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
         {typing && (
           <div className="ec-chat__msg-row ec-chat__msg-row--ai">
             <div className="ec-chat__msg-avatar" style={{ background: "var(--ec-black)", boxShadow: "none" }}>🏰</div>
-            <div className="ec-chat__typing" style={{ background: "var(--ec-light-gray)", border: "1px solid var(--ec-black)", borderRadius: "0" }}>
-              {[0,1,2].map(i => <div key={i} className="ec-chat__typing-dot" style={{ animationDelay: `${i * 0.15}s`, background: "var(--ec-black)" }}/>)}
+            <div style={{
+              padding: "10px 14px",
+              background: "var(--ec-light-gray)",
+              border: "1px solid var(--ec-black)",
+              fontStyle: "italic",
+              fontSize: "14px",
+              color: "var(--ec-black)",
+              animation: "ecThinkingPulse 1.4s ease-in-out infinite",
+            }}>
+              {thinkingLabel}<span className="ec-thinking-dots"/>
             </div>
           </div>
         )}
@@ -818,6 +865,8 @@ export default function App() {
   const [bubbleHint, setBubbleHint]       = useState(true);
   const [input, setInput]                 = useState("");
   const [typing, setTyping]               = useState(false);
+  const [typingLang, setTypingLang]       = useState("ro");
+  const [typingPhrase, setTypingPhrase]   = useState("");
   const [unread, setUnread]               = useState(2);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [messages, setMessages]           = useState([
@@ -844,6 +893,10 @@ export default function App() {
       .map(m => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
 
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
+    const lang = detectLangClient(userMsg);
+    const pool = THINKING_PHRASES[lang];
+    setTypingLang(lang);
+    setTypingPhrase(pool[Math.floor(Math.random() * pool.length)]);
     setTyping(true);
     try {
       const authed = await ensureAuth();
@@ -864,11 +917,10 @@ export default function App() {
       if (!res.body) throw new Error("No response body");
       const aiMsgIndex = msgIndexRef.current * 2 + 1;
       msgIndexRef.current += 1;
-      setTyping(false);
-      setMessages(prev => [...prev, { role: "ai", text: "", index: aiMsgIndex, feedback: null }]);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let bubblePushed = false;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -880,15 +932,23 @@ export default function App() {
           try {
             const data = JSON.parse(line);
             if (data.token) {
-              setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = { ...updated[updated.length - 1], text: updated[updated.length - 1].text + data.token };
-                return updated;
-              });
+              if (!bubblePushed) {
+                setTyping(false);
+                setMessages(prev => [...prev, { role: "ai", text: data.token, index: aiMsgIndex, feedback: null }]);
+                bubblePushed = true;
+              } else {
+                setMessages(prev => {
+                  const updated = [...prev];
+                  updated[updated.length - 1] = { ...updated[updated.length - 1], text: updated[updated.length - 1].text + data.token };
+                  return updated;
+                });
+              }
             }
           } catch { continue; }
         }
       }
+      // Stream ended without any tokens (rare); make sure typing turns off.
+      if (!bubblePushed) setTyping(false);
     } catch (err) {
       console.error("Chat error:", err);
       setTyping(false);
@@ -926,7 +986,7 @@ export default function App() {
       <Hero/><InfoSection/><LineupSection/>
       <AiBubble chatOpen={chatOpen} bubbleHint={bubbleHint} onToggle={handleBubble}/>
       {chatOpen && (
-        <ChatWindow messages={messages} typing={typing} input={input}
+        <ChatWindow messages={messages} typing={typing} typingLang={typingLang} typingPhrase={typingPhrase} input={input}
           onInputChange={e => setInput(e.target.value)}
           onSend={sendMessage} onKeyDown={handleKey} onChip={sendMessage}
           messagesEndRef={messagesEndRef} onFeedback={handleFeedback}/>

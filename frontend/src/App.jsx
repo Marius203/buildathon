@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import "./ElectricCastle.css";
 import bubbleLogo from "./images/logo.jpg";
+import chatAvatar from "./images/logo.jpg";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -8,9 +9,9 @@ const API_URL = "http://localhost:8001";
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
-function getToken()     { return localStorage.getItem("ec_token"); }
+function getToken() { return localStorage.getItem("ec_token"); }
 function getUserEmail() { return localStorage.getItem("ec_email"); }
-function isAdmin()      { return localStorage.getItem("ec_role") === "admin"; }
+function isAdmin() { return localStorage.getItem("ec_role") === "admin"; }
 
 function getSessionId() {
   if (!window._ecSessionId) {
@@ -76,25 +77,25 @@ function playNotifSound() {
 
 const INITIAL_NOTIFICATIONS = [
   { id: 1, text: "🎵 Line-up complet anunțat! Verifică artiștii tăi favoriți", time: "acum 2 min", read: false },
-  { id: 2, text: "🚌 Shuttle-urile din Cluj sunt aproape sold out!",            time: "acum 1h",  read: false },
-  { id: 3, text: "⛺ Locuri de glamping disponibile – rezervă acum",            time: "acum 3h",  read: true  },
+  { id: 2, text: "🚌 Shuttle-urile din Cluj sunt aproape sold out!", time: "acum 1h", read: false },
+  { id: 3, text: "⛺ Locuri de glamping disponibile – rezervă acum", time: "acum 3h", read: true },
 ];
 
 const NAV_LINKS = ["Tickets", "Info", "Artists", "Gallery", "Contact"];
 
 const STAGES = [
-  { label: "Main Stage",     cls: "ec-lineup__stage ec-lineup__stage--featured" },
-  { label: "Forest Stage",   cls: "ec-lineup__stage ec-lineup__stage--mid"      },
-  { label: "Electric Stage", cls: "ec-lineup__stage ec-lineup__stage--mid"      },
-  { label: "Live Stage",     cls: "ec-lineup__stage ec-lineup__stage--sm"       },
-  { label: "Secret Stage",   cls: "ec-lineup__stage ec-lineup__stage--sm"       },
+  { label: "Main Stage", cls: "ec-lineup__stage ec-lineup__stage--featured" },
+  { label: "Forest Stage", cls: "ec-lineup__stage ec-lineup__stage--mid" },
+  { label: "Electric Stage", cls: "ec-lineup__stage ec-lineup__stage--mid" },
+  { label: "Live Stage", cls: "ec-lineup__stage ec-lineup__stage--sm" },
+  { label: "Secret Stage", cls: "ec-lineup__stage ec-lineup__stage--sm" },
 ];
 
 const INFO_CARDS = [
   { icon: "🚌", title: "Transport", desc: "Shuttle din Cluj direct la Bonțida. Simplu și fără stres de parcare." },
-  { icon: "🏕️", title: "Cazare",   desc: "Camping, glamping sau hotel în Cluj. Există o opțiune pentru fiecare." },
-  { icon: "🎵", title: "Muzică",   desc: "5 scene, genuri diferite, energie non-stop 4 zile și 4 nopți." },
-  { icon: "🌧️", title: "Vreme",   desc: "Ploaia face parte din experiență. Cizmele de cauciuc sunt cool." },
+  { icon: "🏕️", title: "Cazare", desc: "Camping, glamping sau hotel în Cluj. Există o opțiune pentru fiecare." },
+  { icon: "🎵", title: "Muzică", desc: "5 scene, genuri diferite, energie non-stop 4 zile și 4 nopți." },
+  { icon: "🌧️", title: "Vreme", desc: "Ploaia face parte din experiență. Cizmele de cauciuc sunt cool." },
 ];
 
 const CHIPS = ["🚌 Transport", "🏕️ Cazare", "💰 Buget", "🌧️ Vreme"];
@@ -121,17 +122,17 @@ function detectLangClient(text) {
   if (!text) return "en";
   if (/[ăâîșțĂÂÎȘȚ]/.test(text)) return "ro";
   const tokens = new Set((text.toLowerCase().match(/[a-zăâîșț]+/gu) || []));
-  const ro = ["si","cu","la","in","nu","ca","de","pe","ce","cum","sunt","pentru","din","pana","vreau","pot","trebuie","ajung","aduc","bilet","bilete","cazare","cort","salut","multumesc","buna"];
+  const ro = ["si", "cu", "la", "in", "nu", "ca", "de", "pe", "ce", "cum", "sunt", "pentru", "din", "pana", "vreau", "pot", "trebuie", "ajung", "aduc", "bilet", "bilete", "cazare", "cort", "salut", "multumesc", "buna"];
   return ro.some(w => tokens.has(w)) ? "ro" : "en";
 }
 
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
 
 function AuthModal({ onClose, onSuccess }) {
-  const [mode, setMode]       = useState("login");
-  const [email, setEmail]     = useState("");
-  const [password, setPass]   = useState("");
-  const [error, setError]     = useState("");
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPass] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
@@ -175,8 +176,8 @@ function AuthModal({ onClose, onSuccess }) {
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#fff", fontSize: "20px", cursor: "pointer" }}>✕</button>
         </div>
         <form onSubmit={handleSubmit} style={{ padding: "28px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div><label style={labelStyle}>EMAIL</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} placeholder="email@exemplu.com"/></div>
-          <div><label style={labelStyle}>PAROLĂ</label><input type="password" value={password} onChange={e => setPass(e.target.value)} required minLength={6} style={inputStyle} placeholder="••••••••"/></div>
+          <div><label style={labelStyle}>EMAIL</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} placeholder="email@exemplu.com" /></div>
+          <div><label style={labelStyle}>PAROLĂ</label><input type="password" value={password} onChange={e => setPass(e.target.value)} required minLength={6} style={inputStyle} placeholder="••••••••" /></div>
           {error && <div style={{ background: "#fff0f0", border: "2px solid var(--ec-red)", padding: "10px 14px", color: "var(--ec-red)", fontSize: "13px", fontWeight: "bold" }}>⚠️ {error}</div>}
           <button type="submit" disabled={loading} style={{ background: loading ? "#888" : "var(--ec-red)", color: "#fff", border: "2px solid var(--ec-black)", padding: "14px", fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", letterSpacing: "1px", cursor: loading ? "not-allowed" : "pointer", boxShadow: "4px 4px 0 var(--ec-black)" }}>
             {loading ? "SE PROCESEAZĂ..." : mode === "login" ? "INTRĂ ÎN CONT" : "CREEAZĂ CONT"}
@@ -200,32 +201,32 @@ function AdminPanel({ onClose }) {
   const [tab, setTab] = useState("stats");
 
   // Stats
-  const [stats, setStats]           = useState(null);
-  const [hourly, setHourly]         = useState([]);
+  const [stats, setStats] = useState(null);
+  const [hourly, setHourly] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [statsLoading, setStatsL]   = useState(true);
-  const [statsError, setStatsErr]   = useState("");
+  const [statsLoading, setStatsL] = useState(true);
+  const [statsError, setStatsErr] = useState("");
 
   // Unanswered + polling
-  const [unanswered, setUnanswered]         = useState([]);
-  const [unansweredLoad, setUnansLoad]      = useState(false);
+  const [unanswered, setUnanswered] = useState([]);
+  const [unansweredLoad, setUnansLoad] = useState(false);
   const [unansweredCount, setUnansweredCount] = useState(0);
-  const [newUnanswered, setNewUnanswered]   = useState(0); // câte noi față de ultima verificare
-  const prevCountRef                        = useRef(null);
-  const pollTimerRef                        = useRef(null);
+  const [newUnanswered, setNewUnanswered] = useState(0); // câte noi față de ultima verificare
+  const prevCountRef = useRef(null);
+  const pollTimerRef = useRef(null);
 
   // Favorites
-  const [favorites, setFavorites]   = useState([]);
+  const [favorites, setFavorites] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
-  const [favsLoading, setFavsLoad]  = useState(false);
-  const [newFav, setNewFav]         = useState("");
-  const [favMsg, setFavMsg]         = useState("");
+  const [favsLoading, setFavsLoad] = useState(false);
+  const [newFav, setNewFav] = useState("");
+  const [favMsg, setFavMsg] = useState("");
 
   // Upload
-  const [files, setFiles]         = useState([]);
+  const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
-  const fileInputRef              = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ── Polling pentru unanswered count ──
   const pollUnanswered = useCallback(async () => {
@@ -258,8 +259,8 @@ function AdminPanel({ onClose }) {
     async function fetchAll() {
       try {
         const [sRes, hRes, cRes] = await Promise.all([
-          fetch(`${API_URL}/admin/stats`,            { headers: authHeaders() }),
-          fetch(`${API_URL}/admin/stats/hourly`,     { headers: authHeaders() }),
+          fetch(`${API_URL}/admin/stats`, { headers: authHeaders() }),
+          fetch(`${API_URL}/admin/stats/hourly`, { headers: authHeaders() }),
           fetch(`${API_URL}/admin/stats/categories`, { headers: authHeaders() }),
         ]);
         if (sRes.ok) {
@@ -301,7 +302,7 @@ function AdminPanel({ onClose }) {
     setFavsLoad(true);
     try {
       const [fRes, sRes] = await Promise.all([
-        fetch(`${API_URL}/admin/favorites`,             { headers: authHeaders() }),
+        fetch(`${API_URL}/admin/favorites`, { headers: authHeaders() }),
         fetch(`${API_URL}/admin/favorites/suggestions`, { headers: authHeaders() }),
       ]);
       if (fRes.ok) setFavorites((await fRes.json()).favorites || []);
@@ -329,9 +330,9 @@ function AdminPanel({ onClose }) {
       const r = await fetch(`${API_URL}/admin/stats/export`, { headers: authHeaders() });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const blob = await r.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href = url; a.download = `ec-stats-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `ec-stats-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
       URL.revokeObjectURL(url);
     } catch (e) { alert("Export eșuat: " + e.message); }
   }
@@ -355,10 +356,10 @@ function AdminPanel({ onClose }) {
   }
 
   const TABS = [
-    ["stats",      "📊 Statistici"],
-    ["favorites",  "⭐ Favorite"],
+    ["stats", "📊 Statistici"],
+    ["favorites", "⭐ Favorite"],
     ["unanswered", "⚠️ Fără Răspuns"],
-    ["upload",     "📁 Upload"],
+    ["upload", "📁 Upload"],
   ];
 
   const panelStyle = {
@@ -373,7 +374,7 @@ function AdminPanel({ onClose }) {
   };
   const cardStyle = { background: "var(--ec-white)", border: "2px solid var(--ec-black)", boxShadow: "4px 4px 0 var(--ec-black)", padding: "20px" };
   const maxHourly = Math.max(...hourly.map(h => h.count), 1);
-  const maxCat    = Math.max(...categories.map(c => c.count), 1);
+  const maxCat = Math.max(...categories.map(c => c.count), 1);
 
   return (
     <div style={panelStyle}>
@@ -431,17 +432,17 @@ function AdminPanel({ onClose }) {
           {tab === "stats" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {statsLoading && <p style={{ color: "#888", textAlign: "center", padding: "40px" }}>Se încarcă...</p>}
-              {statsError   && <p style={{ color: "var(--ec-red)", fontWeight: "bold" }}>⚠️ {statsError}</p>}
+              {statsError && <p style={{ color: "var(--ec-red)", fontWeight: "bold" }}>⚠️ {statsError}</p>}
               {stats && (
                 <>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
                     {[
-                      { icon: "💬", label: "Total mesaje",    value: stats.total_messages },
-                      { icon: "👥", label: "Conversații",      value: stats.total_conversations },
-                      { icon: "📅", label: "Conv. azi",        value: stats.conversations_today },
-                      { icon: "👤", label: "Useri totali",     value: stats.total_users },
-                      { icon: "🆕", label: "Useri noi azi",    value: stats.users_today },
-                      { icon: "⚠️", label: "Fără răspuns",     value: unansweredCount },
+                      { icon: "💬", label: "Total mesaje", value: stats.total_messages },
+                      { icon: "👥", label: "Conversații", value: stats.total_conversations },
+                      { icon: "📅", label: "Conv. azi", value: stats.conversations_today },
+                      { icon: "👤", label: "Useri totali", value: stats.total_users },
+                      { icon: "🆕", label: "Useri noi azi", value: stats.users_today },
+                      { icon: "⚠️", label: "Fără răspuns", value: unansweredCount },
                       { icon: "👍", label: "Feedback pozitiv", value: stats.feedback?.positive ?? 0 },
                       { icon: "👎", label: "Feedback negativ", value: stats.feedback?.negative ?? 0 },
                     ].map(s => (
@@ -459,7 +460,7 @@ function AdminPanel({ onClose }) {
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "80px" }}>
                         {hourly.map((h, i) => (
                           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                            <div style={{ width: "100%", background: h.count > 0 ? "var(--ec-red)" : "#e5e7eb", height: `${Math.max((h.count / maxHourly) * 64, h.count > 0 ? 4 : 2)}px`, transition: "height 0.3s" }}/>
+                            <div style={{ width: "100%", background: h.count > 0 ? "var(--ec-red)" : "#e5e7eb", height: `${Math.max((h.count / maxHourly) * 64, h.count > 0 ? 4 : 2)}px`, transition: "height 0.3s" }} />
                             {i % 4 === 0 && <span style={{ fontSize: "9px", color: "#888", whiteSpace: "nowrap" }}>{h.hour}</span>}
                           </div>
                         ))}
@@ -475,7 +476,7 @@ function AdminPanel({ onClose }) {
                           <div key={cat.name} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <span style={{ width: "80px", fontSize: "13px", color: "#555", textTransform: "capitalize", flexShrink: 0 }}>{cat.name}</span>
                             <div style={{ flex: 1, background: "#f0f0f0", height: "18px" }}>
-                              <div style={{ width: `${(cat.count / maxCat) * 100}%`, height: "100%", background: CATEGORY_COLORS[cat.name] || "#94a3b8", transition: "width 0.4s" }}/>
+                              <div style={{ width: `${(cat.count / maxCat) * 100}%`, height: "100%", background: CATEGORY_COLORS[cat.name] || "#94a3b8", transition: "width 0.4s" }} />
                             </div>
                             <span style={{ fontSize: "13px", fontWeight: "bold", color: "#333", width: "28px", textAlign: "right" }}>{cat.count}</span>
                           </div>
@@ -501,7 +502,7 @@ function AdminPanel({ onClose }) {
                 <div style={{ display: "flex", gap: "10px" }}>
                   <input value={newFav} onChange={e => setNewFav(e.target.value)} placeholder="Scrie întrebarea..."
                     style={{ flex: 1, padding: "10px 14px", border: "2px solid var(--ec-black)", fontSize: "14px", outline: "none", fontFamily: "Inter, sans-serif" }}
-                    onKeyDown={e => e.key === "Enter" && newFav.trim() && addFavorite(newFav.trim())}/>
+                    onKeyDown={e => e.key === "Enter" && newFav.trim() && addFavorite(newFav.trim())} />
                   <button onClick={() => newFav.trim() && addFavorite(newFav.trim())} style={{ background: "var(--ec-red)", color: "#fff", border: "2px solid var(--ec-black)", padding: "10px 20px", fontFamily: "Oswald, sans-serif", fontSize: "15px", fontWeight: "bold", cursor: "pointer" }}>ADAUGĂ</button>
                 </div>
                 {favMsg && <p style={{ marginTop: "8px", fontSize: "13px", fontWeight: "bold", color: favMsg.startsWith("✅") ? "#166534" : "var(--ec-red)" }}>{favMsg}</p>}
@@ -579,7 +580,7 @@ function AdminPanel({ onClose }) {
               <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: "3px dashed var(--ec-black)", background: files.length ? "#f0fff4" : "var(--ec-white)", padding: "40px 24px", cursor: "pointer", gap: "12px" }}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => { e.preventDefault(); setFiles(e.dataTransfer.files); setUploadMsg(""); }}>
-                <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" style={{ display: "none" }} onChange={e => { setFiles(e.target.files); setUploadMsg(""); }}/>
+                <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" style={{ display: "none" }} onChange={e => { setFiles(e.target.files); setUploadMsg(""); }} />
                 <span style={{ fontSize: "40px" }}>📂</span>
                 <span style={{ fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", color: "var(--ec-black)" }}>DRAG & DROP sau click să selectezi</span>
                 <span style={{ fontSize: "13px", color: "#888" }}>JPG, PNG, PDF, DOC, TXT</span>
@@ -647,7 +648,7 @@ function NavBar({ unread, onBellClick, onAuthClick, onAdminClick, loggedIn, chil
     <nav className="ec-nav">
       <div className="ec-nav__logo">
         <svg width="38" height="38" viewBox="0 0 38 38">
-          <polygon points="19,2 36,10.5 36,27.5 19,36 2,27.5 2,10.5" fill="var(--ec-black)" stroke="var(--ec-white)" strokeWidth="2"/>
+          <polygon points="19,2 36,10.5 36,27.5 19,36 2,27.5 2,10.5" fill="var(--ec-black)" stroke="var(--ec-white)" strokeWidth="2" />
           <text x="19" y="24" textAnchor="middle" fill="var(--ec-white)" fontSize="12" fontFamily="Oswald, sans-serif" fontWeight="bold" letterSpacing="0.5">EC</text>
         </svg>
         <div>
@@ -670,8 +671,8 @@ function NavBar({ unread, onBellClick, onAuthClick, onAdminClick, loggedIn, chil
         <div style={{ position: "relative" }}>
           <button className="ec-nav__bell" onClick={onBellClick} aria-label="Notificări">
             <svg width="24" height="24" fill="none" stroke="var(--ec-white)" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
             {unread > 0 && <span className="ec-nav__bell-badge">{unread}</span>}
           </button>
@@ -739,7 +740,7 @@ function NotifPanel({ notifications, onClose }) {
       <div className="ec-notif-panel__body">
         {notifications.map(n => (
           <div key={n.id} className={`ec-notif-item ${!n.read ? "ec-notif-item--unread" : ""}`}>
-            {!n.read ? <div className="ec-notif-item__dot"/> : <div className="ec-notif-item__dot-placeholder"/>}
+            {!n.read ? <div className="ec-notif-item__dot" /> : <div className="ec-notif-item__dot-placeholder" />}
             <div className="ec-notif-item__content">
               <p className="ec-notif-item__text">{n.text}</p>
               <span className="ec-notif-item__time">{n.time}</span>
@@ -757,14 +758,14 @@ function AiBubble({ chatOpen, bubbleHint, onToggle }) {
       {bubbleHint && !chatOpen && (
         <div style={{ position: "absolute", bottom: "90px", right: "0", background: "var(--ec-white)", color: "var(--ec-black)", border: "3px solid var(--ec-black)", boxShadow: "6px 6px 0px var(--ec-black)", padding: "12px 20px", fontWeight: "bold", whiteSpace: "nowrap", fontSize: "14px", fontFamily: "Inter, sans-serif" }}>
           Hei, prima oară la EC? 👋
-          <div style={{ position: "absolute", bottom: "-8px", right: "26px", width: "12px", height: "12px", background: "var(--ec-white)", borderBottom: "3px solid var(--ec-black)", borderRight: "3px solid var(--ec-black)", transform: "rotate(45deg)" }}/>
+          <div style={{ position: "absolute", bottom: "-8px", right: "26px", width: "12px", height: "12px", background: "var(--ec-white)", borderBottom: "3px solid var(--ec-black)", borderRight: "3px solid var(--ec-black)", transform: "rotate(45deg)" }} />
         </div>
       )}
       <button onClick={onToggle} style={{ width: "75px", height: "75px", borderRadius: "50%", border: "3px solid var(--ec-black)", boxShadow: "6px 6px 0px var(--ec-black)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "transform 0.2s", transform: chatOpen ? "scale(0.9)" : "scale(1)", backgroundImage: chatOpen ? "none" : `url(${bubbleLogo})`, backgroundSize: "110%", backgroundPosition: "center", backgroundRepeat: "no-repeat", backgroundColor: chatOpen ? "var(--ec-black)" : "transparent" }}
         onMouseOver={e => !chatOpen && (e.currentTarget.style.transform = "scale(1.05)")}
         onMouseOut={e => !chatOpen && (e.currentTarget.style.transform = "scale(1)")}
         aria-label="Deschide asistentul EC">
-        {chatOpen && <svg width="32" height="32" fill="none" stroke="var(--ec-white)" strokeWidth="3" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
+        {chatOpen && <svg width="32" height="32" fill="none" stroke="var(--ec-white)" strokeWidth="3" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>}
       </button>
     </div>
   );
@@ -802,18 +803,18 @@ function ChatWindow({ messages, typing, typingLang, typingPhrase, input, onInput
   return (
     <div className="ec-chat">
       <div className="ec-chat__header">
-        <div className="ec-chat__avatar" style={{ background: "var(--ec-black)", border: "1px solid var(--ec-white)", boxShadow: "none" }}>🏰</div>
+        <img src={chatAvatar} style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="EC" />
         <div style={{ flex: 1 }}>
-          <div className="ec-chat__header-name">First-Timer AI</div>
-          <div className="ec-chat__header-status"><div className="ec-chat__status-dot"/>Online acum</div>
+          <div className="ec-chat__header-name">Robica</div>
+          <div className="ec-chat__header-status"><div className="ec-chat__status-dot" />Online acum</div>
         </div>
       </div>
       <div className="ec-chat__messages">
         {messages.map((msg, i) => (
           <div key={i} className={`ec-chat__msg-row ec-chat__msg-row--${msg.role}`}>
-            {msg.role === "ai" && <div className="ec-chat__msg-avatar" style={{ background: "var(--ec-black)", boxShadow: "none" }}>🏰</div>}
+            {msg.role === "ai" && <img src={chatAvatar} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="EC" />}
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", maxWidth: "80%" }}>
-              <div className={`ec-chat__bubble ec-chat__bubble--${msg.role}`} dangerouslySetInnerHTML={{ __html: formatText(msg.text) }}/>
+              <div className={`ec-chat__bubble ec-chat__bubble--${msg.role}`} dangerouslySetInnerHTML={{ __html: formatText(msg.text) }} />
               {msg.role === "ai" && msg.index !== undefined && (
                 <div style={{ display: "flex", gap: "6px", paddingLeft: "4px" }}>
                   <button onClick={() => onFeedback(msg.index, true)} style={{ background: msg.feedback === true ? "#22c55e" : "#f0f0f0", border: "1px solid #ccc", borderRadius: "4px", padding: "2px 8px", fontSize: "12px", cursor: "pointer" }}>👍</button>
@@ -825,21 +826,13 @@ function ChatWindow({ messages, typing, typingLang, typingPhrase, input, onInput
         ))}
         {typing && (
           <div className="ec-chat__msg-row ec-chat__msg-row--ai">
-            <div className="ec-chat__msg-avatar" style={{ background: "var(--ec-black)", boxShadow: "none" }}>🏰</div>
-            <div style={{
-              padding: "10px 14px",
-              background: "var(--ec-light-gray)",
-              border: "1px solid var(--ec-black)",
-              fontStyle: "italic",
-              fontSize: "14px",
-              color: "var(--ec-black)",
-              animation: "ecThinkingPulse 1.4s ease-in-out infinite",
-            }}>
-              {thinkingLabel}<span className="ec-thinking-dots"/>
+            <img src={chatAvatar} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="EC" />
+            <div className="ec-chat__typing" style={{ background: "var(--ec-light-gray)", border: "1px solid var(--ec-black)", borderRadius: "0" }}>
+              {[0, 1, 2].map(i => <div key={i} className="ec-chat__typing-dot" style={{ animationDelay: `${i * 0.15}s`, background: "var(--ec-black)" }} />)}
             </div>
           </div>
         )}
-        <div ref={messagesEndRef}/>
+        <div ref={messagesEndRef} />
       </div>
       <div className="ec-chat__chips">
         {CHIPS.map(chip => {
@@ -848,9 +841,9 @@ function ChatWindow({ messages, typing, typingLang, typingPhrase, input, onInput
         })}
       </div>
       <div className="ec-chat__input-row">
-        <input className="ec-chat__input" value={input} onChange={onInputChange} onKeyDown={onKeyDown} placeholder="Întreabă orice despre EC..." style={{ background: "var(--ec-light-gray)", color: "var(--ec-black)", border: "2px solid var(--ec-black)", borderRadius: "0" }}/>
+        <input className="ec-chat__input" value={input} onChange={onInputChange} onKeyDown={onKeyDown} placeholder="Întreabă orice despre EC..." style={{ background: "var(--ec-light-gray)", color: "var(--ec-black)", border: "2px solid var(--ec-black)", borderRadius: "0" }} />
         <button className="ec-chat__send" onClick={() => onSend()} style={{ background: "var(--ec-red)", border: "2px solid var(--ec-black)", borderRadius: "0", boxShadow: "none" }}>
-          <svg width="18" height="18" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <svg width="18" height="18" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>
         </button>
       </div>
     </div>
@@ -860,23 +853,23 @@ function ChatWindow({ messages, typing, typingLang, typingPhrase, input, onInput
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const [chatOpen, setChatOpen]           = useState(false);
-  const [notifOpen, setNotifOpen]         = useState(false);
-  const [bubbleHint, setBubbleHint]       = useState(true);
-  const [input, setInput]                 = useState("");
-  const [typing, setTyping]               = useState(false);
-  const [typingLang, setTypingLang]       = useState("ro");
-  const [typingPhrase, setTypingPhrase]   = useState("");
-  const [unread, setUnread]               = useState(2);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [bubbleHint, setBubbleHint] = useState(true);
+  const [input, setInput] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [typingLang, setTypingLang] = useState("ro");
+  const [typingPhrase, setTypingPhrase] = useState("");
+  const [unread, setUnread] = useState(2);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [messages, setMessages]           = useState([
+  const [messages, setMessages] = useState([
     { role: "ai", text: "Hei! 👋 Sunt asistentul tău EC. Prima dată la festival? Spune-mi cu ce te pot ajuta – transport, cazare, buget, muzică sau orice altceva!" }
   ]);
-  const [showAuth, setShowAuth]   = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [loggedIn, setLoggedIn]   = useState(!!getToken());
-  const messagesEndRef            = useRef(null);
-  const msgIndexRef               = useRef(0);
+  const [loggedIn, setLoggedIn] = useState(!!getToken());
+  const messagesEndRef = useRef(null);
+  const msgIndexRef = useRef(0);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typing]);
   useEffect(() => { const t = setTimeout(() => setBubbleHint(false), 6000); return () => clearTimeout(t); }, []);
@@ -981,18 +974,18 @@ export default function App() {
   return (
     <div>
       <NavBar unread={unread} onBellClick={handleBell} onAuthClick={handleAuthClick} onAdminClick={() => setShowAdmin(true)} loggedIn={loggedIn}>
-        {notifOpen && <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)}/>}
+        {notifOpen && <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)} />}
       </NavBar>
-      <Hero/><InfoSection/><LineupSection/>
-      <AiBubble chatOpen={chatOpen} bubbleHint={bubbleHint} onToggle={handleBubble}/>
+      <Hero /><InfoSection /><LineupSection />
+      <AiBubble chatOpen={chatOpen} bubbleHint={bubbleHint} onToggle={handleBubble} />
       {chatOpen && (
         <ChatWindow messages={messages} typing={typing} typingLang={typingLang} typingPhrase={typingPhrase} input={input}
           onInputChange={e => setInput(e.target.value)}
           onSend={sendMessage} onKeyDown={handleKey} onChip={sendMessage}
-          messagesEndRef={messagesEndRef} onFeedback={handleFeedback}/>
+          messagesEndRef={messagesEndRef} onFeedback={handleFeedback} />
       )}
-      {showAuth  && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess}/>}
-      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)}/>}
+      {showAuth && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} />}
+      {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
     </div>
   );
 }

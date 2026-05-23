@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agent.answerer import answer as run_answer, answer_stream_async as run_answer_stream
+from app.services.ingest_service import ingest_text
 from app.db.chroma import get_kb_collection
 from app.embeddings.ollama import OLLAMA_BASE_URL
 from app.lib.bm25_index import build_indexes, get_store
@@ -133,6 +134,24 @@ async def answer_stream(req: AnswerRequest) -> StreamingResponse:
             yield json.dumps(event) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
+
+
+@app.post("/ingest")
+async def ingest(body: dict) -> dict:
+    """
+    Primeste { text, filename, lang } de la backend dupa upload.
+    Embeddeaza si upserteza in Chroma.
+    """
+    text = body.get("text", "").strip()
+    filename = body.get("filename", "upload.txt")
+    lang = body.get("lang", "en")
+
+    if not text:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="text este obligatoriu")
+
+    result = ingest_text(text, filename, lang)
+    return {"message": "Ingestie finalizata", **result}
 
 
 @app.post("/answer", response_model=AnswerResponse)

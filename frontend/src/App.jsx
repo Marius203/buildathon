@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import "./ElectricCastle.css";
 import bubbleLogo from "./images/logo.jpg";
+import chatAvatar from "./images/logo.jpg";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -763,16 +764,16 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
   return (
     <div className="ec-chat">
       <div className="ec-chat__header">
-        <div className="ec-chat__avatar" style={{ background: "var(--ec-black)", border: "1px solid var(--ec-white)", boxShadow: "none" }}>🏰</div>
+        <img src={chatAvatar} style={{ width: "48px", height: "48px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="EC"/>
         <div style={{ flex: 1 }}>
-          <div className="ec-chat__header-name">First-Timer AI</div>
+          <div className="ec-chat__header-name">Robica</div>
           <div className="ec-chat__header-status"><div className="ec-chat__status-dot"/>Online acum</div>
         </div>
       </div>
       <div className="ec-chat__messages">
         {messages.map((msg, i) => (
           <div key={i} className={`ec-chat__msg-row ec-chat__msg-row--${msg.role}`}>
-            {msg.role === "ai" && <div className="ec-chat__msg-avatar" style={{ background: "var(--ec-black)", boxShadow: "none" }}>🏰</div>}
+            {msg.role === "ai" && <img src={chatAvatar} style={{ width: "36px", height: "36px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="EC"/>}
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", maxWidth: "80%" }}>
               <div className={`ec-chat__bubble ec-chat__bubble--${msg.role}`} dangerouslySetInnerHTML={{ __html: formatText(msg.text) }}/>
               {msg.role === "ai" && msg.index !== undefined && (
@@ -786,7 +787,7 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
         ))}
         {typing && (
           <div className="ec-chat__msg-row ec-chat__msg-row--ai">
-            <div className="ec-chat__msg-avatar" style={{ background: "var(--ec-black)", boxShadow: "none" }}>🏰</div>
+            <img src={chatAvatar} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="EC"/>
             <div className="ec-chat__typing" style={{ background: "var(--ec-light-gray)", border: "1px solid var(--ec-black)", borderRadius: "0" }}>
               {[0,1,2].map(i => <div key={i} className="ec-chat__typing-dot" style={{ animationDelay: `${i * 0.15}s`, background: "var(--ec-black)" }}/>)}
             </div>

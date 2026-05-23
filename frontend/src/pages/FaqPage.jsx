@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import "./FaqPage.css";
 
 const FAQ_DATA = [
   {

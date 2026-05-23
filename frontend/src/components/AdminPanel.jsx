@@ -7,7 +7,7 @@ const CATEGORY_COLORS = {
 };
 
 const TABS = [
-  ["stats",      "📊 Statistici"],
+  ["stats",      "📊 Dashboard"],
   ["favorites",  "⭐ Favorite"],
   ["unanswered", "⚠️ Fără Răspuns"],
   ["upload",     "📁 Upload"],
@@ -260,6 +260,166 @@ function BroadcastTab({ cardStyle }) {
   );
 }
 
+
+const CAT_COLORS = {
+  transport: "#3b82f6", cazare: "#22c55e", buget: "#f59e0b",
+  vreme: "#6366f1", muzica: "#ec4899", acces: "#14b8a6", altele: "#94a3b8",
+};
+
+function DashboardTab({ stats, hourly, categories, themes, peakHours, statsLoading, statsError, cardStyle, onExport }) {
+  const maxHourly  = Math.max(...hourly.map(h => h.count), 1);
+  const maxPeak    = Math.max(...peakHours.map(h => h.count), 1);
+  const maxCat     = Math.max(...categories.map(c => c.count), 1);
+  const maxTheme   = Math.max(...(themes.map(t => t.count) || [1]), 1);
+
+  const feedback   = stats?.feedback || { positive: 0, negative: 0, total: 0 };
+  const satPct     = feedback.total > 0 ? Math.round((feedback.positive / feedback.total) * 100) : null;
+  const unanswRate = stats?.total_messages > 0 ? Math.round((stats.unanswered_count / stats.total_messages) * 100) : 0;
+
+  if (statsLoading) return <p style={{ color: "#888", textAlign: "center" }}>Se încarcă...</p>;
+  if (statsError)   return <p style={{ color: "red" }}>Eroare: {statsError}</p>;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+      {/* KPI Row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+        {[
+          { label: "Total mesaje",     value: stats?.total_messages || 0,     color: "#3b82f6", icon: "💬" },
+          { label: "Conversații azi",  value: stats?.conversations_today || 0, color: "#22c55e", icon: "📅" },
+          { label: "Useri totali",     value: stats?.total_users || 0,         color: "#8b5cf6", icon: "👥" },
+          { label: "Fără răspuns",     value: stats?.unanswered_count || 0,    color: "#ef4444", icon: "⚠️" },
+        ].map((k, i) => (
+          <div key={i} style={{ ...cardStyle, borderTop: `3px solid ${k.color}`, padding: "12px 14px" }}>
+            <div style={{ fontSize: "11px", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{k.icon} {k.label}</div>
+            <div style={{ fontFamily: "Oswald, sans-serif", fontSize: "26px", fontWeight: "bold", color: k.color }}>{k.value.toLocaleString()}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Satisfaction + Unanswered rate */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <div style={cardStyle}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>👍 Satisfacție utilizatori</div>
+          {satPct !== null ? (
+            <>
+              <div style={{ fontFamily: "Oswald, sans-serif", fontSize: "30px", fontWeight: "bold", color: satPct >= 70 ? "#22c55e" : satPct >= 40 ? "#f59e0b" : "#dc2626" }}>{satPct}%</div>
+              <div style={{ height: 6, background: "#f0f0f0", marginTop: 8, borderRadius: 3 }}>
+                <div style={{ height: "100%", width: `${satPct}%`, background: satPct >= 70 ? "#22c55e" : "#f59e0b", borderRadius: 3, transition: "width 0.5s" }} />
+              </div>
+              <div style={{ fontSize: "12px", color: "#888", marginTop: 6 }}>{feedback.positive} 👍 · {feedback.negative} 👎 din {feedback.total}</div>
+            </>
+          ) : <div style={{ fontSize: "13px", color: "#aaa" }}>Nu există feedback încă</div>}
+        </div>
+
+        <div style={cardStyle}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>❓ Rată fără răspuns</div>
+          <div style={{ fontFamily: "Oswald, sans-serif", fontSize: "30px", fontWeight: "bold", color: unanswRate > 30 ? "#dc2626" : unanswRate > 15 ? "#f59e0b" : "#22c55e" }}>{unanswRate}%</div>
+          <div style={{ height: 6, background: "#f0f0f0", marginTop: 8, borderRadius: 3 }}>
+            <div style={{ height: "100%", width: `${Math.min(unanswRate, 100)}%`, background: unanswRate > 30 ? "#dc2626" : "#f59e0b", borderRadius: 3, transition: "width 0.5s" }} />
+          </div>
+          <div style={{ fontSize: "12px", color: "#888", marginTop: 6 }}>{stats?.unanswered_count || 0} din {stats?.total_messages || 0} mesaje</div>
+        </div>
+      </div>
+
+      {/* Activitate 24h */}
+      {hourly.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>⏰ Activitate ultimele 24h</div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: 70 }}>
+            {hourly.map((h, i) => (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
+                  <div style={{ width: "100%", height: `${Math.max((h.count / maxHourly) * 100, h.count > 0 ? 8 : 2)}%`, background: h.count > 0 ? "var(--ec-black)" : "#f0f0f0", minHeight: 2 }} />
+                </div>
+                {i % 6 === 0 && <div style={{ fontSize: 8, color: "#ccc" }}>{h.hour.slice(0, 2)}h</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Peak hours all-time */}
+      {peakHours.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>
+            🕐 Ore de vârf (toate timpurile)
+            <span style={{ marginLeft: 8, fontWeight: "normal", color: "#aaa" }}>— când sunt adminii cel mai necesari</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: 70 }}>
+            {peakHours.map((h, i) => {
+              const isPeak = h.count === Math.max(...peakHours.map(x => x.count));
+              return (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%" }}>
+                  <div style={{ flex: 1, display: "flex", alignItems: "flex-end", width: "100%" }}>
+                    <div style={{ width: "100%", height: `${Math.max((h.count / maxPeak) * 100, h.count > 0 ? 8 : 2)}%`, background: isPeak ? "#ef4444" : h.count > 0 ? "#3b82f6" : "#f0f0f0", minHeight: 2, position: "relative" }} />
+                  </div>
+                  {i % 6 === 0 && <div style={{ fontSize: 8, color: "#ccc" }}>{h.hour.slice(0, 2)}h</div>}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: "11px", color: "#888", marginTop: 8 }}>
+            🔴 = ora de vârf maximă &nbsp;·&nbsp; 🔵 = activitate normală
+          </div>
+        </div>
+      )}
+
+      {/* Categories */}
+      {categories.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>🗂️ Ce întreabă oamenii</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[...categories].sort((a, b) => b.count - a.count).map((cat, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 80, fontSize: 12, fontWeight: "bold", color: "#333", flexShrink: 0 }}>{cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}</div>
+                <div style={{ flex: 1, background: "#f0f0f0", height: 18 }}>
+                  <div style={{ width: `${(cat.count / maxCat) * 100}%`, height: "100%", background: CAT_COLORS[cat.name] || "#94a3b8", transition: "width 0.4s" }} />
+                </div>
+                <div style={{ fontSize: 13, fontWeight: "bold", color: "#333", width: 28, textAlign: "right", flexShrink: 0 }}>{cat.count}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Unanswered themes — gaps in knowledge base */}
+      {themes.length > 0 && (
+        <div style={{ ...cardStyle, borderLeft: "4px solid #ef4444" }}>
+          <div style={{ fontSize: "11px", color: "#888", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>🚨 Gaps în knowledge base</div>
+          <div style={{ fontSize: "12px", color: "#666", marginBottom: 14 }}>Teme pentru care oamenii nu au primit răspuns — ce lipsește din comunicarea EC</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {themes.map((theme, i) => (
+              <div key={i}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <div style={{ width: 80, fontSize: 12, fontWeight: "bold", color: "#333", flexShrink: 0 }}>{theme.name.charAt(0).toUpperCase() + theme.name.slice(1)}</div>
+                  <div style={{ flex: 1, background: "#f0f0f0", height: 16 }}>
+                    <div style={{ width: `${(theme.count / maxTheme) * 100}%`, height: "100%", background: "#ef4444", opacity: 0.7, transition: "width 0.4s" }} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: "bold", color: "#ef4444", width: 28, textAlign: "right", flexShrink: 0 }}>{theme.count}</div>
+                </div>
+                {theme.examples.length > 0 && (
+                  <div style={{ marginLeft: 90, display: "flex", flexDirection: "column", gap: 2 }}>
+                    {theme.examples.map((ex, j) => (
+                      <div key={j} style={{ fontSize: 11, color: "#888", fontStyle: "italic", background: "#fafafa", padding: "2px 6px", borderLeft: "2px solid #e5e7eb" }}>"{ex}"</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Export */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={onExport} style={{ background: "var(--ec-black)", color: "#fff", border: "2px solid var(--ec-black)", boxShadow: "4px 4px 0 #555", padding: "12px 28px", fontFamily: "Oswald, sans-serif", fontSize: "16px", fontWeight: "bold", letterSpacing: "1px", cursor: "pointer" }}>⬇️ EXPORT CSV</button>
+      </div>
+
+    </div>
+  );
+}
+
 export default function AdminPanel({ onClose }) {
   const [tab, setTab] = useState("stats");
 
@@ -268,6 +428,8 @@ export default function AdminPanel({ onClose }) {
   const [categories, setCategories] = useState([]);
   const [statsLoading, setStatsL]   = useState(true);
   const [statsError, setStatsErr]   = useState("");
+  const [themes, setThemes]          = useState([]);
+  const [peakHours, setPeakHours]    = useState([]);
 
   const [unanswered, setUnanswered]             = useState([]);
   const [unansweredLoad, setUnansLoad]          = useState(false);
@@ -326,6 +488,15 @@ export default function AdminPanel({ onClose }) {
         } else setStatsErr(`HTTP ${sRes.status}`);
         if (hRes.ok) setHourly((await hRes.json()).hourly || []);
         if (cRes.ok) setCategories((await cRes.json()).categories || []);
+        // Fetch new metrics
+        try {
+          const [tRes, pRes] = await Promise.all([
+            fetch(`${API_URL}/admin/stats/unanswered-themes`, { headers: authHeaders() }),
+            fetch(`${API_URL}/admin/stats/peak-hours`,        { headers: authHeaders() }),
+          ]);
+          if (tRes.ok) setThemes((await tRes.json()).themes || []);
+          if (pRes.ok) setPeakHours((await pRes.json()).hours || []);
+        } catch (e) {}
       } catch (e) { setStatsErr(e.message); }
       finally { setStatsL(false); }
     }
@@ -438,64 +609,17 @@ export default function AdminPanel({ onClose }) {
         <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
 
           {tab === "stats" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              {statsLoading && <p style={{ color: "#888", textAlign: "center", padding: "40px" }}>Se încarcă...</p>}
-              {statsError   && <p style={{ color: "var(--ec-red)", fontWeight: "bold" }}>⚠️ {statsError}</p>}
-              {stats && (
-                <>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
-                    {[
-                      { icon: "💬", label: "Total mesaje",    value: stats.total_messages },
-                      { icon: "👥", label: "Conversații",      value: stats.total_conversations },
-                      { icon: "📅", label: "Conv. azi",        value: stats.conversations_today },
-                      { icon: "👤", label: "Useri totali",     value: stats.total_users },
-                      { icon: "🆕", label: "Useri noi azi",    value: stats.users_today },
-                      { icon: "⚠️", label: "Fără răspuns",     value: unansweredCount },
-                      { icon: "👍", label: "Feedback pozitiv", value: stats.feedback?.positive ?? 0 },
-                      { icon: "👎", label: "Feedback negativ", value: stats.feedback?.negative ?? 0 },
-                    ].map(s => (
-                      <div key={s.label} style={{ ...cardStyle, textAlign: "center", padding: "16px 12px" }}>
-                        <div style={{ fontSize: "24px", marginBottom: "6px" }}>{s.icon}</div>
-                        <div style={{ fontSize: "28px", fontWeight: "bold", fontFamily: "Oswald, sans-serif", color: "var(--ec-red)" }}>{s.value ?? "—"}</div>
-                        <div style={{ fontSize: "11px", color: "#888", marginTop: "4px", letterSpacing: "0.5px", textTransform: "uppercase" }}>{s.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {hourly.length > 0 && (
-                    <div style={cardStyle}>
-                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>🕐 ACTIVITATE ULTIMELE 24H</h3>
-                      <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "80px" }}>
-                        {hourly.map((h, i) => (
-                          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                            <div style={{ width: "100%", background: h.count > 0 ? "var(--ec-red)" : "#e5e7eb", height: `${Math.max((h.count / maxHourly) * 64, h.count > 0 ? 4 : 2)}px`, transition: "height 0.3s" }}/>
-                            {i % 4 === 0 && <span style={{ fontSize: "9px", color: "#888", whiteSpace: "nowrap" }}>{h.hour}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {categories.length > 0 && (
-                    <div style={cardStyle}>
-                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>🏷️ CATEGORII POPULARE</h3>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        {[...categories].sort((a, b) => b.count - a.count).map(cat => (
-                          <div key={cat.name} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ width: "80px", fontSize: "13px", color: "#555", textTransform: "capitalize", flexShrink: 0 }}>{cat.name}</span>
-                            <div style={{ flex: 1, background: "#f0f0f0", height: "18px" }}>
-                              <div style={{ width: `${(cat.count / maxCat) * 100}%`, height: "100%", background: CATEGORY_COLORS[cat.name] || "#94a3b8", transition: "width 0.4s" }}/>
-                            </div>
-                            <span style={{ fontSize: "13px", fontWeight: "bold", color: "#333", width: "28px", textAlign: "right" }}>{cat.count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button onClick={handleExport} style={{ background: "var(--ec-black)", color: "#fff", border: "2px solid var(--ec-black)", boxShadow: "4px 4px 0 #555", padding: "12px 28px", fontFamily: "Oswald, sans-serif", fontSize: "16px", fontWeight: "bold", letterSpacing: "1px", cursor: "pointer" }}>⬇️ EXPORT CSV</button>
-                  </div>
-                </>
-              )}
-            </div>
+            <DashboardTab
+              stats={stats}
+              hourly={hourly}
+              categories={categories}
+              themes={themes}
+              peakHours={peakHours}
+              statsLoading={statsLoading}
+              statsError={statsError}
+              cardStyle={cardStyle}
+              onExport={handleExport}
+            />
           )}
 
           {tab === "favorites" && (

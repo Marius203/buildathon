@@ -265,6 +265,82 @@ async def get_broadcast_history(admin=Depends(get_current_admin)):
     ]}
 
 
+
+@router.get("/stats/unanswered-themes")
+async def get_unanswered_themes(user=Depends(get_current_admin)):
+    """Intrebarile fara raspuns grupate pe tema"""
+    db = get_db()
+    categories = {
+        "transport": ["transport", "drum", "ajung", "cluj", "shuttle", "mașin", "bus", "tren", "gara"],
+        "cazare": ["cazare", "dorm", "cort", "camping", "hotel", "glamping", "cort"],
+        "buget": ["buget", "bani", "cost", "cât", "cat", "pret", "cheltuieli", "scump"],
+        "vreme": ["ploaie", "noroi", "vreme", "meteo", "cizme", "umbrela"],
+        "muzica": ["muzic", "artist", "scena", "party", "electronic", "rock", "lineup"],
+        "acces": ["bratara", "acces", "cashless", "dus", "locker", "intrare", "bilet"],
+    }
+
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user", "messages.answered": False}},
+        {"$project": {"content": {"$toLower": "$messages.content"}, "timestamp": "$messages.timestamp"}},
+        {"$sort": {"timestamp": -1}},
+        {"$limit": 200}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(200)
+
+    counts = {cat: 0 for cat in categories}
+    counts["altele"] = 0
+    examples = {cat: [] for cat in categories}
+    examples["altele"] = []
+
+    for doc in results:
+        content_text = doc.get("content", "")
+        matched = False
+        for cat, keywords in categories.items():
+            if any(kw in content_text for kw in keywords):
+                counts[cat] += 1
+                if len(examples[cat]) < 3:
+                    examples[cat].append(content_text[:80])
+                matched = True
+                break
+        if not matched:
+            counts["altele"] += 1
+            if len(examples["altele"]) < 3:
+                examples["altele"].append(content_text[:80])
+
+    return {
+        "themes": [
+            {"name": k, "count": v, "examples": examples[k]}
+            for k, v in sorted(counts.items(), key=lambda x: -x[1])
+            if v > 0
+        ]
+    }
+
+
+@router.get("/stats/peak-hours")
+async def get_peak_hours(user=Depends(get_current_admin)):
+    """Distributia mesajelor pe ore din zi - toate timpurile, nu doar 24h"""
+    db = get_db()
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user"}},
+        {"$group": {
+            "_id": {"$hour": "$messages.timestamp"},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(24)
+    hours = {r["_id"]: r["count"] for r in results}
+    
+    peak_hour = max(hours, key=hours.get) if hours else 0
+    
+    return {
+        "hours": [{"hour": f"{h:02d}:00", "count": hours.get(h, 0)} for h in range(24)],
+        "peak_hour": f"{peak_hour:02d}:00",
+        "peak_count": hours.get(peak_hour, 0)
+    }
+
 @router.get("/stats/export")
 async def export_stats(user=Depends(get_current_admin)):
     db = get_db()

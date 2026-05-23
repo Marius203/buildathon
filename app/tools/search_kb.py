@@ -8,8 +8,11 @@ from app.embeddings.ollama import embed_one
 from app.lib.bm25_index import get_store
 from app.lib.rrf import fuse
 
-DEFAULT_K = 5
+DEFAULT_K = 3
 CANDIDATE_K = 20  # pull this many from each retriever before fusing
+# Cosine distance threshold above which we consider retrieval "weak" / out-of-domain.
+# bge-m3 typical good matches sit at 0.25–0.40; >0.55 means nothing in KB is close.
+LOW_CONFIDENCE_DISTANCE = 0.55
 
 
 def search_kb(
@@ -34,6 +37,7 @@ def search_kb(
     vector_ids: list[str] = chroma["ids"][0]
     docs_by_id: dict[str, str] = dict(zip(chroma["ids"][0], chroma["documents"][0]))
     meta_by_id: dict[str, dict] = dict(zip(chroma["ids"][0], chroma["metadatas"][0]))
+    vec_dist_by_id: dict[str, float] = dict(zip(chroma["ids"][0], chroma["distances"][0]))
 
     store = get_store()
     idx = store.by_lang.get(lang)
@@ -64,6 +68,9 @@ def search_kb(
         {
             "id": cid,
             "score": round(score, 6),
+            "vector_distance": (
+                round(vec_dist_by_id[cid], 4) if cid in vec_dist_by_id else None
+            ),
             "text": docs_by_id.get(cid, ""),
             "topic": meta_by_id.get(cid, {}).get("topic"),
             "section": meta_by_id.get(cid, {}).get("section"),
@@ -73,3 +80,14 @@ def search_kb(
         }
         for cid, score in top
     ]
+
+
+def has_strong_match(results: list[dict[str, Any]]) -> bool:
+    """True if at least one result has a vector distance below LOW_CONFIDENCE_DISTANCE.
+    Used by the answerer to short-circuit out-of-domain queries.
+    """
+    for r in results:
+        d = r.get("vector_distance")
+        if d is not None and d < LOW_CONFIDENCE_DISTANCE:
+            return True
+    return False

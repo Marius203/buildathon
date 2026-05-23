@@ -10,6 +10,7 @@ import httpx
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+from app.agent.answerer import answer as run_answer
 from app.db.chroma import get_kb_collection
 from app.embeddings.ollama import OLLAMA_BASE_URL
 from app.lib.bm25_index import build_indexes, get_store
@@ -35,6 +36,7 @@ class SearchRequest(BaseModel):
 class SearchHit(BaseModel):
     id: str
     score: float
+    vector_distance: float | None = None
     text: str
     topic: str | None
     section: str | None
@@ -93,4 +95,42 @@ async def search(req: SearchRequest) -> SearchResponse:
         lang=req.lang,
         topic=req.topic,
         results=[SearchHit(**h) for h in hits],
+    )
+
+
+class AnswerRequest(BaseModel):
+    query: str = Field(min_length=1)
+    lang: Literal["ro", "en"] = "en"
+    topic: str | None = None
+    k: int = Field(default=3, ge=1, le=20)
+
+
+class AnswerSource(BaseModel):
+    id: str
+    section: str | None
+    section_title: str | None
+    topic: str | None
+    score: float | None
+    vector_distance: float | None = None
+
+
+class AnswerResponse(BaseModel):
+    query: str
+    lang: str
+    topic: str | None
+    answer: str
+    sources: list[AnswerSource]
+    low_confidence: bool = False
+
+
+@app.post("/answer", response_model=AnswerResponse)
+async def answer(req: AnswerRequest) -> AnswerResponse:
+    result = run_answer(req.query, lang=req.lang, topic=req.topic, k=req.k)
+    return AnswerResponse(
+        query=result["query"],
+        lang=result["lang"],
+        topic=result["topic"],
+        answer=result["answer"],
+        sources=[AnswerSource(**s) for s in result["sources"]],
+        low_confidence=result.get("low_confidence", False),
     )

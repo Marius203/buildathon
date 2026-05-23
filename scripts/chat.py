@@ -7,7 +7,8 @@ Commands:
     :lang ro | :lang en           switch query language
     :topic transport              filter to a topic
     :topic clear                  clear topic filter
-    :k 3                          change number of results
+    :k 3                          change number of retrieved chunks
+    :mode answer | :mode search   toggle qwen answer vs raw retrieved chunks
     :help                         show commands
     :quit / Ctrl-C                exit
 Anything else is treated as a query.
@@ -41,8 +42,10 @@ commands:
   :lang ro | :lang en     switch query language
   :topic <name>           filter by topic (one of: see HANDOFF)
   :topic clear            remove topic filter
-  :k <int>                number of results (1..20)
-  :state                  show current lang/topic/k
+  :k <int>                number of retrieved chunks (1..20)
+  :mode answer            generate an answer with qwen (default)
+  :mode search            show raw retrieved chunks (debug)
+  :state                  show current lang/topic/k/mode
   :health                 ping backend /health
   :help                   this message
   :quit                   exit (Ctrl-C also works)
@@ -54,6 +57,7 @@ class State:
         self.lang = "en"
         self.topic: str | None = None
         self.k = 5
+        self.mode = "answer"  # "answer" | "search"
 
 
 def fmt_hit(i: int, hit: dict) -> str:
@@ -69,7 +73,7 @@ def fmt_hit(i: int, hit: dict) -> str:
 
 
 def cmd_state(state: State) -> None:
-    print(f"  lang={state.lang}  topic={state.topic}  k={state.k}")
+    print(f"  lang={state.lang}  topic={state.topic}  k={state.k}  mode={state.mode}")
 
 
 def cmd_health(client: httpx.Client) -> None:
@@ -121,6 +125,12 @@ def handle_command(line: str, state: State, client: httpx.Client) -> bool:
             print(f"  k -> {n}")
         except ValueError:
             print("  usage: :k <int 1..20>")
+    elif cmd == ":mode":
+        if arg in ("answer", "search"):
+            state.mode = arg
+            print(f"  mode -> {arg}")
+        else:
+            print("  usage: :mode answer | :mode search")
     else:
         print(f"  unknown command '{cmd}'. try :help")
     return True
@@ -143,6 +153,24 @@ def do_search(query: str, state: State, client: httpx.Client) -> None:
         return
     for i, hit in enumerate(results, start=1):
         print(fmt_hit(i, hit))
+
+
+def do_answer(query: str, state: State, client: httpx.Client) -> None:
+    payload = {"query": query, "lang": state.lang, "k": state.k}
+    if state.topic:
+        payload["topic"] = state.topic
+    try:
+        r = client.post("/answer", json=payload, timeout=300.0)
+        r.raise_for_status()
+    except httpx.HTTPError as exc:
+        print(f"  [err] {exc}")
+        return
+    data = r.json()
+    print(f"\n  {data.get('answer', '').strip()}\n")
+    srcs = data.get("sources", [])
+    if srcs:
+        labels = [f"{s.get('section')} ({s.get('topic')})" for s in srcs]
+        print(f"  sources: {', '.join(labels)}")
 
 
 def main() -> None:
@@ -170,7 +198,10 @@ def main() -> None:
                 if not handle_command(line, state, client):
                     break
             else:
-                do_search(line, state, client)
+                if state.mode == "search":
+                    do_search(line, state, client)
+                else:
+                    do_answer(line, state, client)
 
 
 if __name__ == "__main__":

@@ -1,53 +1,158 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.db.mongodb import get_db
-from app.api.dependencies import get_current_admin
+from app.api.dependencies import get_current_admin, get_current_user
 from app.services.kb_service import process_document, process_image
+from bson import ObjectId
 import csv
 import io
 import datetime
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+# ─── Stats ────────────────────────────────────────────────────────────────────
+
 @router.get("/stats")
 async def get_stats(user=Depends(get_current_admin)):
     db = get_db()
-    total_messages = await db.messages.count_documents({"role": "user"})
-    total_conversations = len(await db.messages.distinct("session_id"))
-    unanswered_count = await db.messages.count_documents({"role": "assistant", "answered": False})
-    pipeline = [
-        {"$match": {"role": "user"}},
-        {"$group": {"_id": "$content", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$limit": 5}
+
+    total_conversations = await db.conversations.count_documents({})
+
+    pipeline_total = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user"}},
+        {"$count": "total"}
     ]
-    cursor = db.messages.aggregate(pipeline)
-    top_questions = [{"question": doc["_id"], "count": doc["count"]} async for doc in cursor]
+    result = await db.conversations.aggregate(pipeline_total).to_list(1)
+    total_messages = result[0]["total"] if result else 0
+
+    pipeline_unanswered = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "assistant", "messages.answered": False}},
+        {"$count": "total"}
+    ]
+    result = await db.conversations.aggregate(pipeline_unanswered).to_list(1)
+    unanswered_count = result[0]["total"] if result else 0
+
+    today = datetime.datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    conversations_today = await db.conversations.count_documents({"created_at": {"$gte": today}})
+
+    users_today = await db.users.count_documents({"created_at": {"$gte": today}})
+    total_users = await db.users.count_documents({})
+
+    pipeline_feedback = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.feedback": {"$ne": None}}},
+        {"$group": {"_id": "$messages.feedback", "count": {"$sum": 1}}}
+    ]
+    feedback_results = await db.conversations.aggregate(pipeline_feedback).to_list(10)
+    positive = next((r["count"] for r in feedback_results if r["_id"] == True), 0)
+    negative = next((r["count"] for r in feedback_results if r["_id"] == False), 0)
+
     return {
-        "total_messages": total_messages,
         "total_conversations": total_conversations,
+        "conversations_today": conversations_today,
+        "total_messages": total_messages,
         "unanswered_count": unanswered_count,
-        "top_questions": top_questions
+        "total_users": total_users,
+        "users_today": users_today,
+        "feedback": {
+            "positive": positive,
+            "negative": negative,
+            "total": positive + negative
+        }
     }
+
+@router.get("/stats/hourly")
+async def get_hourly_stats(user=Depends(get_current_admin)):
+    """Mesaje per ora in ultimele 24h - pentru grafic"""
+    db = get_db()
+    since = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user", "messages.timestamp": {"$gte": since}}},
+        {"$group": {
+            "_id": {"$hour": "$messages.timestamp"},
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(24)
+    hours = {r["_id"]: r["count"] for r in results}
+    current_hour = datetime.datetime.utcnow().hour
+    data = []
+    for i in range(24):
+        hour = (current_hour - 23 + i) % 24
+        data.append({"hour": f"{hour:02d}:00", "count": hours.get(hour, 0)})
+    return {"hourly": data}
+
+@router.get("/stats/categories")
+async def get_category_stats(user=Depends(get_current_admin)):
+    """Categorii populare detectate din mesaje"""
+    db = get_db()
+    categories = {
+        "transport": ["transport", "drum", "ajung", "cluj", "shuttle", "mașin", "bus", "tren"],
+        "cazare": ["cazare", "dorm", "cort", "camping", "hotel", "glamping"],
+        "buget": ["buget", "bani", "cost", "cât", "cat", "pret", "cheltuieli"],
+        "vreme": ["ploaie", "noroi", "vreme", "meteo", "cizme"],
+        "muzica": ["muzic", "artist", "scena", "party", "electronic", "rock"],
+        "acces": ["bratara", "acces", "cashless", "dus", "locker", "intrare"],
+    }
+
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user"}},
+        {"$project": {"content": {"$toLower": "$messages.content"}}}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(10000)
+
+    counts = {cat: 0 for cat in categories}
+    counts["altele"] = 0
+    for doc in results:
+        content = doc.get("content", "")
+        matched = False
+        for cat, keywords in categories.items():
+            if any(kw in content for kw in keywords):
+                counts[cat] += 1
+                matched = True
+                break
+        if not matched:
+            counts["altele"] += 1
+
+    return {"categories": [{"name": k, "count": v} for k, v in counts.items()]}
 
 @router.get("/unanswered")
 async def get_unanswered(user=Depends(get_current_admin)):
     db = get_db()
-    cursor = db.messages.find({"role": "assistant", "answered": False}).sort("timestamp", -1).limit(50)
-    messages = []
-    async for msg in cursor:
-        msg["_id"] = str(msg["_id"])
-        messages.append(msg)
-    return {"unanswered": messages}
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "assistant", "messages.answered": False}},
+        {"$project": {"session_id": 1, "message": "$messages", "_id": 0}},
+        {"$sort": {"message.timestamp": -1}},
+        {"$limit": 50}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(50)
+    return {"unanswered": results}
 
 @router.get("/stats/export")
 async def export_stats(user=Depends(get_current_admin)):
     db = get_db()
-    cursor = db.messages.find({"role": "user"}).sort("timestamp", -1)
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user"}},
+        {"$project": {
+            "session_id": 1,
+            "content": "$messages.content",
+            "timestamp": "$messages.timestamp",
+            "_id": 0
+        }},
+        {"$sort": {"timestamp": -1}}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(10000)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["session_id", "message", "timestamp"])
-    async for msg in cursor:
+    for msg in results:
         writer.writerow([msg["session_id"], msg["content"], msg["timestamp"]])
     output.seek(0)
     return StreamingResponse(
@@ -55,6 +160,89 @@ async def export_stats(user=Depends(get_current_admin)):
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=stats.csv"}
     )
+
+# ─── Favorites ────────────────────────────────────────────────────────────────
+
+@router.get("/favorites")
+async def get_favorites(user=Depends(get_current_admin)):
+    db = get_db()
+    cursor = db.favorites.find({}).sort("created_at", -1)
+    favorites = []
+    async for fav in cursor:
+        fav["_id"] = str(fav["_id"])
+        favorites.append(fav)
+    return {"favorites": favorites}
+
+@router.post("/favorites")
+async def add_favorite(body: dict, user=Depends(get_current_admin)):
+    db = get_db()
+    question = body.get("question", "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+    existing = await db.favorites.find_one({"question": question})
+    if existing:
+        raise HTTPException(status_code=400, detail="Already in favorites")
+    await db.favorites.insert_one({
+        "question": question,
+        "created_at": datetime.datetime.utcnow()
+    })
+    return {"message": "Added to favorites"}
+
+@router.delete("/favorites/{favorite_id}")
+async def delete_favorite(favorite_id: str, user=Depends(get_current_admin)):
+    db = get_db()
+    result = await db.favorites.delete_one({"_id": ObjectId(favorite_id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Favorite not found")
+    return {"message": "Deleted"}
+
+@router.get("/favorites/suggestions")
+async def get_favorite_suggestions(user=Depends(get_current_admin), threshold: int = 3):
+    """Intrebari puse de mai multe ori care nu sunt inca in favorites"""
+    db = get_db()
+    pipeline = [
+        {"$unwind": "$messages"},
+        {"$match": {"messages.role": "user"}},
+        {"$group": {"_id": "$messages.content", "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gte": threshold}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 20}
+    ]
+    results = await db.conversations.aggregate(pipeline).to_list(20)
+    existing_favs = await db.favorites.distinct("question")
+    suggestions = [
+        {"question": r["_id"], "count": r["count"]}
+        for r in results
+        if r["_id"] not in existing_favs
+    ]
+    return {"suggestions": suggestions}
+
+# ─── Feedback (accesat de useri normali) ──────────────────────────────────────
+
+@router.post("/feedback")
+async def give_feedback(body: dict, user=Depends(get_current_user)):
+    """
+    Body: { session_id, message_index, helpful: true/false }
+    message_index = indexul mesajului assistant in array-ul de messages
+    """
+    db = get_db()
+    session_id = body.get("session_id")
+    message_index = body.get("message_index")
+    helpful = body.get("helpful")
+
+    if session_id is None or message_index is None or helpful is None:
+        raise HTTPException(status_code=400, detail="session_id, message_index and helpful are required")
+
+    field = f"messages.{message_index}.feedback"
+    result = await db.conversations.update_one(
+        {"session_id": session_id},
+        {"$set": {field: helpful}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return {"message": "Feedback saved"}
+
+# ─── KB Upload ────────────────────────────────────────────────────────────────
 
 @router.post("/kb/upload")
 async def upload_file(file: UploadFile = File(...), user=Depends(get_current_admin)):

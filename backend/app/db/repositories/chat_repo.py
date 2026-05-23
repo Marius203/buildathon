@@ -4,21 +4,27 @@ from app.db.mongodb import get_db
 async def save_message(session_id: str, role: str, content: str, answered: bool = True):
     db = get_db()
     message = {
-        "session_id": session_id,
         "role": role,
         "content": content,
         "timestamp": datetime.utcnow(),
         "feedback": None,
         "answered": answered
     }
-    result = await db.messages.insert_one(message)
-    return str(result.inserted_id)
+    # Dacă conversația există o actualizăm, altfel o creăm
+    result = await db.conversations.update_one(
+        {"session_id": session_id},
+        {
+            "$push": {"messages": message},
+            "$set": {"updated_at": datetime.utcnow()},
+            "$setOnInsert": {"session_id": session_id, "created_at": datetime.utcnow()}
+        },
+        upsert=True
+    )
+    return session_id
 
 async def get_history(session_id: str):
     db = get_db()
-    cursor = db.messages.find({"session_id": session_id}).sort("timestamp", 1)
-    messages = []
-    async for msg in cursor:
-        msg["_id"] = str(msg["_id"])
-        messages.append(msg)
-    return messages
+    conv = await db.conversations.find_one({"session_id": session_id})
+    if not conv:
+        return []
+    return conv.get("messages", [])

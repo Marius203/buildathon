@@ -808,6 +808,13 @@ export default function App() {
     const userMsg = (overrideText !== undefined ? overrideText : input).trim();
     if (!userMsg) return;
     setInput("");
+
+    // Capture prior turns BEFORE pushing the new user message, and skip the
+    // initial canned greeting so the model isn't biased by it.
+    const history = messages
+      .filter((m, i) => !(i === 0 && m.role === "ai"))
+      .map(m => ({ role: m.role === "ai" ? "assistant" : "user", content: m.text }));
+
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
     setTyping(true);
     try {
@@ -823,6 +830,7 @@ export default function App() {
         body: JSON.stringify({
           session_id: getSessionId(),
           message: userMsg,
+          history,
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

@@ -15,7 +15,8 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 async def send_message(body: MessageRequest, user=Depends(get_current_user)):
     lang = await get_or_set_session_lang(body.session_id, body.message)
     await save_message(body.session_id, "user", body.message)
-    response, answered = await get_agent_response(body.message, body.session_id, lang=lang)
+    history = [m.model_dump() for m in body.history]
+    response, answered = await get_agent_response(body.message, body.session_id, lang=lang, history=history)
     await save_message(body.session_id, "assistant", response, answered)
     return MessageResponse(
         session_id=body.session_id,
@@ -28,13 +29,14 @@ async def send_message(body: MessageRequest, user=Depends(get_current_user)):
 async def stream_message(body: MessageRequest, user=Depends(get_current_user)):
     lang = await get_or_set_session_lang(body.session_id, body.message)
     await save_message(body.session_id, "user", body.message)
+    history = [m.model_dump() for m in body.history]
 
     tokens: list[str] = []
     low_confidence = False
 
     async def generate():
         nonlocal low_confidence
-        async for chunk in stream_agent_response(body.message, lang=lang):
+        async for chunk in stream_agent_response(body.message, lang=lang, history=history):
             yield chunk
             try:
                 data = json.loads(chunk.strip())

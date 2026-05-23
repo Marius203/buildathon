@@ -91,6 +91,35 @@ def chat_stream(
                 yield text
 
 
+def rewrite_query(query: str, history: list[dict[str, Any]]) -> str:
+    """Turn a vague follow-up ("da", "and how much?") into a standalone search
+    query using the recent conversation. Returns the original query on error or
+    when history is empty."""
+    if not history or not query.strip():
+        return query
+    convo = "\n".join(f"{m['role']}: {m['content']}" for m in history[-6:])
+    try:
+        resp = _client().messages.create(
+            model=CLAUDE_MODEL,
+            max_tokens=80,
+            temperature=0,
+            system=(
+                "You rewrite the user's latest message into a standalone search query "
+                "for a festival knowledge base. Use the conversation history to resolve "
+                "pronouns, 'yes/no' answers, and elliptical follow-ups. If the message "
+                "is already standalone, return it unchanged. Reply with ONLY the query, "
+                "no quotes, no preamble. Match the language of the user's latest message."
+            ),
+            messages=[
+                {"role": "user", "content": f"Conversation so far:\n{convo}\n\nLatest user message: {query}\n\nStandalone query:"}
+            ],
+        )
+        out = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
+        return out or query
+    except Exception:
+        return query
+
+
 def detect_language(text: str) -> str:
     """Returns 'ro' or 'en'. Uses Haiku as a cheap classifier; falls back to
     'en' on any error so the caller can decide whether to retry."""

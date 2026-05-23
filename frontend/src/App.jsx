@@ -34,8 +34,9 @@ export default function App() {
   const [messages, setMessages]           = useState([
     { role: "ai", text: "Hei! 👋 Sunt asistentul tău EC. Prima dată la festival? Spune-mi cu ce te pot ajuta – transport, cazare, buget, muzică sau orice altceva!" },
   ]);
-  const [showAuth, setShowAuth]   = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
+  const [showAuth, setShowAuth]     = useState(false);
+  const [showAdmin, setShowAdmin]   = useState(false);
+  const [activeNotif, setActiveNotif] = useState(null);
   const [loggedIn, setLoggedIn]   = useState(!!getToken());
   const messagesEndRef            = useRef(null);
   const msgIndexRef               = useRef(0);
@@ -192,7 +193,7 @@ export default function App() {
         loggedIn={loggedIn}
       >
         {notifOpen && (
-          <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)}/>
+          <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)} onNotifClick={n => { setNotifOpen(false); setActiveNotif(n); }}/>
         )}
       </NavBar>
 

@@ -6,11 +6,14 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import Literal
 
+import json
+
 import httpx
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from app.agent.answerer import answer as run_answer
+from app.agent.answerer import answer as run_answer, answer_stream_async as run_answer_stream
 from app.db.chroma import get_kb_collection
 from app.embeddings.ollama import OLLAMA_BASE_URL
 from app.lib.bm25_index import build_indexes, get_store
@@ -121,6 +124,15 @@ class AnswerResponse(BaseModel):
     answer: str
     sources: list[AnswerSource]
     low_confidence: bool = False
+
+
+@app.post("/answer/stream")
+async def answer_stream(req: AnswerRequest) -> StreamingResponse:
+    async def generate():
+        async for event in run_answer_stream(req.query, lang=req.lang, topic=req.topic, k=req.k):
+            yield json.dumps(event) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
 @app.post("/answer", response_model=AnswerResponse)

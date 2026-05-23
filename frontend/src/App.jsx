@@ -782,11 +782,10 @@ export default function App() {
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
     setTyping(true);
     try {
-      // Asigură-te că avem token înainte de primul mesaj
       const authed = await ensureAuth();
       if (!authed) throw new Error("Auth failed");
 
-      const res = await fetch(`${API_URL}/chat/message`, {
+      const res = await fetch(`${API_URL}/chat/stream`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -799,9 +798,37 @@ export default function App() {
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+
       setTyping(false);
-      setMessages(prev => [...prev, { role: "ai", text: data.agent_response }]);
+      setMessages(prev => [...prev, { role: "ai", text: "" }]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.token) {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  text: updated[updated.length - 1].text + data.token,
+                };
+                return updated;
+              });
+            }
+          } catch {}
+        }
+      }
     } catch (err) {
       console.error("Chat error:", err);
       setTyping(false);

@@ -104,6 +104,8 @@ const CATEGORY_COLORS = {
   vreme: "#6366f1", muzica: "#ec4899", acces: "#14b8a6", altele: "#94a3b8",
 };
 
+const POLL_INTERVAL = 30000;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatText(text) {

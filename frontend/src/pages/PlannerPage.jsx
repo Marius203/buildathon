@@ -86,9 +86,25 @@ function OptionCard({ option, selected, onClick }) {
   );
 }
 
-function PlanDisplay({ plan, onReset }) {
+function buildWhatsAppText(plan) {
+  // Strip markdown to plain text for WhatsApp
+  return "🏰 *Planul nostru pentru Electric Castle*\n" +
+    "━━━━━━━━━━━━━━━━━━━━\n\n" +
+    plan
+      .replace(/#{1,3} (.*)/g, "*$1*")
+      .replace(/\*\*(.*?)\*\*/g, "*$1*")
+      .replace(/^- /gm, "• ")
+      .replace(/<[^>]+>/g, "")
+      .trim() +
+    "\n\n━━━━━━━━━━━━━━━━━━━━\n" +
+    "📲 Plan generat pe electriccastle.ai";
+}
+
+function PlanDisplay({ plan, onReset, answers }) {
   const [displayedText, setDisplayedText] = useState("");
   const [done, setDone] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showGroupShare, setShowGroupShare] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -102,7 +118,14 @@ function PlanDisplay({ plan, onReset }) {
     }
   }, [displayedText]);
 
-  // Convert markdown-like text to HTML
+  function handleCopyPlan() {
+    const text = buildWhatsAppText(plan);
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  }
+
   const formatPlan = (text) => {
     return text
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -132,11 +155,37 @@ function PlanDisplay({ plan, onReset }) {
       />
 
       {done && (
-        <div className="planner-result-actions">
-          <button className="planner-reset-btn" onClick={onReset}>
-            ↩ Încearcă alt profil
-          </button>
-        </div>
+        <>
+          {/* Group Share Section */}
+          <div className="planner-share-box">
+            <div className="planner-share-header">
+              <span className="planner-share-title">📲 Trimite planul în grupul de WhatsApp</span>
+              <span className="planner-share-sub">Copiază și dă paste direct în chat</span>
+            </div>
+            <div className="planner-share-preview">
+              <div className="planner-share-preview-header">
+                <span>🏰 Planul nostru pentru Electric Castle</span>
+              </div>
+              <div className="planner-share-preview-body">
+                {plan.split("\n").slice(0, 6).map((line, i) => (
+                  <div key={i} style={{ fontSize: "0.75rem", color: "#555", lineHeight: 1.5 }}>
+                    {line.replace(/[#*]/g, "").trim() || <br/>}
+                  </div>
+                ))}
+                <div style={{ fontSize: "0.72rem", color: "#aaa", marginTop: 4 }}>...și mai mult</div>
+              </div>
+            </div>
+            <button className="planner-share-btn" onClick={handleCopyPlan}>
+              {copied ? "✓ Copiat! Dă paste în WhatsApp" : "📋 Copiază pentru grup"}
+            </button>
+          </div>
+
+          <div className="planner-result-actions">
+            <button className="planner-reset-btn" onClick={onReset}>
+              ↩ Încearcă alt profil
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
@@ -280,7 +329,7 @@ Fii specific, entuziast și util. Folosește informațiile reale despre EC 2025.
   if (streaming || plan) {
     return (
       <div className="planner-wrap">
-        <PlanDisplay plan={streaming ? streamedText : plan} onReset={handleReset} />
+        <PlanDisplay plan={streaming ? streamedText : plan} onReset={handleReset} answers={answers} />
       </div>
     );
   }

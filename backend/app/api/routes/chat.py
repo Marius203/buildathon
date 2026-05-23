@@ -9,11 +9,11 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 @router.post("/message", response_model=MessageResponse)
 async def send_message(body: MessageRequest, user=Depends(get_current_user)):
     await save_message(body.session_id, "user", body.message)
-    
+
     response, answered = await get_agent_response(body.message, body.session_id)
-    
+
     await save_message(body.session_id, "assistant", response, answered)
-    
+
     return MessageResponse(
         session_id=body.session_id,
         user_message=body.message,

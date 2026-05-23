@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.db.mongodb import get_db
 from app.api.dependencies import get_current_admin, get_current_user
-from app.services.kb_service import process_document, process_image, process_text_file
+from app.services.kb_service import process_document, process_image
 from bson import ObjectId
 import csv
 import io
@@ -212,6 +212,59 @@ async def mark_notification_read(notif_id: str, user=Depends(get_current_user)):
     )
     return {"message": "Marked as read"}
 
+@router.post("/broadcast")
+async def broadcast_notification(body: dict, admin=Depends(get_current_admin)):
+    db = get_db()
+    message = body.get("message", "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Mesajul nu poate fi gol")
+
+    users = await db.users.distinct("email")
+    if not users:
+        return {"message": "Nu există useri înregistrați", "sent_to": 0}
+
+    now = datetime.datetime.utcnow()
+    notifs = [
+        {
+            "user_email": email,
+            "question": None,
+            "answer": None,
+            "broadcast_message": message,
+            "is_broadcast": True,
+            "read": False,
+            "created_at": now,
+        }
+        for email in users
+    ]
+    await db.notifications.insert_many(notifs)
+    return {"message": "Broadcast trimis cu succes", "sent_to": len(users)}
+
+
+@router.get("/broadcast/history")
+async def get_broadcast_history(admin=Depends(get_current_admin)):
+    db = get_db()
+    # Ia broadcast-urile unice dupa mesaj si data (unul per trimitere)
+    pipeline = [
+        {"$match": {"is_broadcast": True}},
+        {"$group": {
+            "_id": "$broadcast_message",
+            "sent_at": {"$min": "$created_at"},
+            "sent_to": {"$sum": 1},
+        }},
+        {"$sort": {"sent_at": -1}},
+        {"$limit": 50},
+    ]
+    results = await db.notifications.aggregate(pipeline).to_list(50)
+    return {"broadcasts": [
+        {
+            "message": r["_id"],
+            "sent_at": r["sent_at"].isoformat() if r["sent_at"] else None,
+            "sent_to": r["sent_to"],
+        }
+        for r in results
+    ]}
+
+
 @router.get("/stats/export")
 async def export_stats(user=Depends(get_current_admin)):
     db = get_db()
@@ -329,16 +382,8 @@ async def upload_file(file: UploadFile = File(...), user=Depends(get_current_adm
     filename = file.filename
     db = get_db()
 
-    TEXT_TYPES = (
-        "text/plain",
-        "text/markdown",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/msword",
-    )
     if file_type == "application/pdf":
         url = await process_document(content, filename)
-    elif file_type in TEXT_TYPES:
-        url = await process_text_file(content, filename, file_type)
     elif file_type.startswith("image/"):
         url = await process_image(content, filename, file_type)
     else:

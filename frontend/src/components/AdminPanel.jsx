@@ -132,9 +132,28 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
 
 
 function BroadcastTab({ cardStyle }) {
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [result, setResult]   = useState(null);
+  const [message, setMessage]   = useState("");
+  const [sending, setSending]   = useState(false);
+  const [result, setResult]     = useState(null);
+  const [history, setHistory]   = useState([]);
+  const [histLoad, setHistLoad] = useState(false);
+
+  useEffect(() => {
+    async function loadHistory() {
+      setHistLoad(true);
+      try {
+        const token = localStorage.getItem("ec_token");
+        const r = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8001"}/admin/broadcast/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (r.ok) {
+          const d = await r.json();
+          setHistory(d.broadcasts || []);
+        }
+      } finally { setHistLoad(false); }
+    }
+    loadHistory();
+  }, [result]);
 
   async function handleBroadcast() {
     if (!message.trim()) return;
@@ -211,6 +230,31 @@ function BroadcastTab({ cardStyle }) {
         <p style={{ fontSize: "13px", color: "#92400e", margin: 0 }}>
           ⚠️ <strong>Atenție:</strong> Mesajul se trimite imediat tuturor userilor înregistrați. Nu există undo.
         </p>
+      </div>
+
+      <div style={cardStyle}>
+        <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "14px", letterSpacing: "1px" }}>
+          📋 ISTORIC BROADCAST-URI
+        </h3>
+        {histLoad && <p style={{ color: "#888", fontSize: "13px" }}>Se încarcă...</p>}
+        {!histLoad && history.length === 0 && (
+          <p style={{ color: "#888", fontSize: "13px" }}>Nu ai trimis niciun broadcast încă.</p>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {history.map((b, i) => (
+            <div key={i} style={{ padding: "12px 14px", background: "#f8f8f8", border: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <p style={{ fontSize: "14px", color: "var(--ec-black)", margin: 0, fontWeight: "500" }}>{b.message}</p>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <span style={{ fontSize: "12px", color: "#888" }}>
+                  📅 {b.sent_at ? new Date(b.sent_at).toLocaleString("ro-RO") : "—"}
+                </span>
+                <span style={{ fontSize: "12px", color: "#888" }}>
+                  👥 {b.sent_to} useri
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

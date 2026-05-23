@@ -1,0 +1,328 @@
+/* ── EC PLANNER ─────────────────────────────────────────── */
+
+.planner-wrap {
+  min-height: calc(100vh - 64px);
+  padding: 48px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--ec-black);
+}
+
+/* Hero */
+.planner-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.planner-title {
+  font-family: var(--ec-font-display);
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--ec-white);
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+.planner-subtitle {
+  font-size: 1rem;
+  color: var(--ec-gray);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Card */
+.planner-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--ec-surface);
+  border: 1px solid var(--ec-border);
+  padding: 36px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Step dots */
+.planner-steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.planner-step-dot {
+  width: 32px;
+  height: 4px;
+  background: var(--ec-border);
+  transition: background 0.3s, width 0.3s;
+}
+
+.planner-step-dot.done {
+  background: var(--ec-yellow);
+}
+
+.planner-step-dot.active {
+  background: var(--ec-yellow);
+  width: 48px;
+}
+
+/* Question */
+.planner-question-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.planner-step-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ec-gray);
+  margin: 0;
+}
+
+.planner-question {
+  font-family: var(--ec-font-display);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 800;
+  color: var(--ec-white);
+  margin: 0;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* Options */
+.planner-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.planner-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--ec-border);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.planner-option:hover {
+  border-color: var(--ec-yellow);
+  background: rgba(255, 220, 0, 0.04);
+}
+
+.planner-option.selected {
+  border-color: var(--ec-yellow);
+  background: rgba(255, 220, 0, 0.08);
+}
+
+.planner-option-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ec-white);
+  letter-spacing: 0.01em;
+}
+
+.planner-option-desc {
+  font-size: 0.78rem;
+  color: var(--ec-gray);
+}
+
+.planner-option-check {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ec-yellow);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+/* Back button */
+.planner-back-btn {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--ec-gray);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.planner-back-btn:hover {
+  color: var(--ec-white);
+}
+
+/* Loading */
+.planner-loading {
+  min-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--ec-black);
+}
+
+.planner-loading-castle {
+  font-size: 3rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.95); }
+}
+
+.planner-loading-text {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ec-gray);
+  margin: 0;
+}
+
+.planner-loading-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.planner-loading-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--ec-yellow);
+  border-radius: 50%;
+  animation: bounce 1.2s ease-in-out infinite;
+}
+
+.planner-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.planner-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-8px); opacity: 1; }
+}
+
+/* Result */
+.planner-result {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.planner-result-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.planner-result-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.planner-result-title {
+  font-family: var(--ec-font-display);
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--ec-white);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+.planner-result-sub {
+  font-size: 0.78rem;
+  color: var(--ec-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.planner-result-body {
+  background: var(--ec-surface);
+  border: 1px solid var(--ec-border);
+  padding: 28px 32px;
+  color: var(--ec-white);
+  font-size: 0.92rem;
+  line-height: 1.75;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.planner-result-body::-webkit-scrollbar {
+  width: 4px;
+}
+.planner-result-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.planner-result-body::-webkit-scrollbar-thumb {
+  background: var(--ec-border);
+}
+
+.plan-h1, .plan-h2, .plan-h3 {
+  font-family: var(--ec-font-display);
+  color: var(--ec-yellow);
+  text-transform: uppercase;
+  margin: 1.2em 0 0.4em;
+}
+
+.plan-h1 { font-size: 1.3rem; }
+.plan-h2 { font-size: 1.1rem; }
+.plan-h3 { font-size: 0.95rem; letter-spacing: 0.05em; }
+
+.plan-list {
+  padding-left: 1.2em;
+  margin: 0.4em 0;
+}
+
+.plan-list li {
+  margin-bottom: 4px;
+}
+
+.plan-p {
+  margin: 0.8em 0;
+}
+
+.planner-result-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.planner-reset-btn {
+  background: transparent;
+  border: 1px solid var(--ec-border);
+  color: var(--ec-gray);
+  padding: 10px 24px;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.planner-reset-btn:hover {
+  border-color: var(--ec-yellow);
+  color: var(--ec-white);
+}
+
+/* Error */
+.planner-error {
+  margin-top: 16px;
+  color: #ff6b6b;
+  font-size: 0.85rem;
+  text-align: center;
+}

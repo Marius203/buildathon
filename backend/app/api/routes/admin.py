@@ -134,6 +134,55 @@ async def get_unanswered(user=Depends(get_current_admin)):
     results = await db.conversations.aggregate(pipeline).to_list(50)
     return {"unanswered": results}
 
+@router.post("/unanswered/reply")
+async def reply_to_unanswered(body: dict, user=Depends(get_current_admin)):
+    db = get_db()
+    session_id = body.get("session_id")
+    message_content = body.get("message_content")
+    reply = body.get("reply", "").strip()
+
+    if not session_id or not reply or not message_content:
+        raise HTTPException(status_code=400, detail="session_id, message_content si reply sunt obligatorii")
+
+    conv = await db.conversations.find_one({"session_id": session_id}, {"messages": 1})
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversatie negasita")
+
+    messages = conv.get("messages", [])
+    target_index = None
+    for i, msg in enumerate(messages):
+        if (msg.get("role") == "user"
+                and msg.get("answered") == False
+                and msg.get("content") == message_content):
+            target_index = i
+            break
+
+    if target_index is None:
+        raise HTTPException(status_code=404, detail="Mesajul nu a fost gasit")
+
+    await db.conversations.update_one(
+        {"session_id": session_id},
+        {"$set": {f"messages.{target_index}.answered": True}}
+    )
+
+    admin_message = {
+        "role": "assistant",
+        "content": reply,
+        "timestamp": datetime.datetime.utcnow(),
+        "feedback": None,
+        "answered": True,
+        "from_admin": True
+    }
+    await db.conversations.update_one(
+        {"session_id": session_id},
+        {
+            "$push": {"messages": admin_message},
+            "$set": {"updated_at": datetime.datetime.utcnow()}
+        }
+    )
+    return {"message": "Raspuns salvat cu succes"}
+
+
 @router.get("/stats/export")
 async def export_stats(user=Depends(get_current_admin)):
     db = get_db()

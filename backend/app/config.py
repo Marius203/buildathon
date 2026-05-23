@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     UPLOADTHING_SECRET: str
     UPLOADTHING_BUCKET_DOCS: str
     UPLOADTHING_BUCKET_IMAGES: str
+    UPLOADTHING_APP_ID: str = "gskdonr2lr"
 
     class Config:
         env_file = ".env"

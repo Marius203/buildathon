@@ -1,22 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.db.mongodb import get_db
 from app.api.dependencies import get_current_user
-from app.services.kb_service import process_document
+from app.services.kb_service import process_document, process_image
 import csv
 import io
+import datetime
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/stats")
 async def get_stats(user=Depends(get_current_user)):
     db = get_db()
-    
     total_messages = await db.messages.count_documents({"role": "user"})
     total_conversations = len(await db.messages.distinct("session_id"))
     unanswered_count = await db.messages.count_documents({"role": "assistant", "answered": False})
-    
-    # top 5 intrebari
     pipeline = [
         {"$match": {"role": "user"}},
         {"$group": {"_id": "$content", "count": {"$sum": 1}}},
@@ -25,7 +23,6 @@ async def get_stats(user=Depends(get_current_user)):
     ]
     cursor = db.messages.aggregate(pipeline)
     top_questions = [{"question": doc["_id"], "count": doc["count"]} async for doc in cursor]
-    
     return {
         "total_messages": total_messages,
         "total_conversations": total_conversations,
@@ -47,14 +44,11 @@ async def get_unanswered(user=Depends(get_current_user)):
 async def export_stats(user=Depends(get_current_user)):
     db = get_db()
     cursor = db.messages.find({"role": "user"}).sort("timestamp", -1)
-    
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["session_id", "message", "timestamp"])
-    
     async for msg in cursor:
         writer.writerow([msg["session_id"], msg["content"], msg["timestamp"]])
-    
     output.seek(0)
     return StreamingResponse(
         iter([output.getvalue()]),
@@ -62,21 +56,25 @@ async def export_stats(user=Depends(get_current_user)):
         headers={"Content-Disposition": "attachment; filename=stats.csv"}
     )
 
-@router.post("/kb/process")
-async def process_uploaded_file(body: dict, user=Depends(get_current_user)):
-    url = body.get("url")
-    file_type = body.get("type")  # "document" sau "image"
-    filename = body.get("filename")
-    
+@router.post("/kb/upload")
+async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):
+    content = await file.read()
+    file_type = file.content_type
+    filename = file.filename
     db = get_db()
+
+    if file_type == "application/pdf":
+        url = await process_document(content, filename)
+    elif file_type.startswith("image/"):
+        url = await process_image(content, filename, file_type)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported file type")
+
     await db.uploads.insert_one({
         "url": url,
         "filename": filename,
-        "type": file_type,
-        "uploaded_at": __import__("datetime").datetime.utcnow()
+        "type": "document" if file_type == "application/pdf" else "image",
+        "uploaded_at": datetime.datetime.utcnow()
     })
-    
-    if file_type == "document":
-        await process_document(url, filename)
-    
-    return {"message": "File processed", "url": url}
+
+    return {"message": "File uploaded", "url": url}

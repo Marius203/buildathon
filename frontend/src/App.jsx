@@ -216,10 +216,7 @@ function AdminPanel({ onClose }) {
   // ── Fetch unanswered when tab changes ──
   useEffect(() => {
     if (tab !== "unanswered") return;
-    setUnansLoad(true);
-    fetch(`${API_URL}/admin/unanswered`, { headers: authHeaders() })
-      .then(r => r.json()).then(d => setUnanswered(d.unanswered || []))
-      .finally(() => setUnansLoad(false));
+    loadUnanswered();
   }, [tab]);
 
   // ── Fetch favorites when tab changes ──
@@ -238,6 +235,17 @@ function AdminPanel({ onClose }) {
       if (fRes.ok) setFavorites((await fRes.json()).favorites || []);
       if (sRes.ok) setSuggestions((await sRes.json()).suggestions || []);
     } finally { setFavsLoad(false); }
+  }
+
+  async function loadUnanswered() {
+    setUnansLoad(true);
+    try {
+      const response = await fetch(`${API_URL}/admin/unanswered`, { headers: authHeaders() });
+      const data = await response.json();
+      setUnanswered(data.unanswered || []);
+    } finally {
+      setUnansLoad(false);
+    }
   }
 
   async function addFavorite(question) {
@@ -805,17 +813,57 @@ export default function App() {
     try {
       const authed = await ensureAuth();
       if (!authed) throw new Error("Auth failed");
-      const res = await fetch(`${API_URL}/chat/message`, {
-        method: "POST", headers: authHeaders(),
-        body: JSON.stringify({ session_id: getSessionId(), message: userMsg }),
+
+      const res = await fetch(`${API_URL}/chat/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "authorization": `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          session_id: getSessionId(),
+          message: userMsg,
+        }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      // indexul mesajului assistant in array-ul din DB (user + assistant alternating, starting from 0)
+
+      if (!res.body) throw new Error("No response body");
+
       const aiMsgIndex = msgIndexRef.current * 2 + 1;
       msgIndexRef.current += 1;
+
       setTyping(false);
-      setMessages(prev => [...prev, { role: "ai", text: data.agent_response, index: aiMsgIndex, feedback: null }]);
+      setMessages(prev => [...prev, { role: "ai", text: "", index: aiMsgIndex, feedback: null }]);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const data = JSON.parse(line);
+            if (data.token) {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  text: updated[updated.length - 1].text + data.token,
+                };
+                return updated;
+              });
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
     } catch (err) {
       console.error("Chat error:", err);
       setTyping(false);

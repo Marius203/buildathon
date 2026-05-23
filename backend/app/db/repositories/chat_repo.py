@@ -22,6 +22,20 @@ async def save_message(session_id: str, role: str, content: str, answered: bool 
     )
     return session_id
 
+async def mark_last_user_message_unanswered(session_id: str):
+    db = get_db()
+    conv = await db.conversations.find_one({"session_id": session_id}, {"messages": 1})
+    if not conv:
+        return
+    messages = conv.get("messages", [])
+    for i in range(len(messages) - 1, -1, -1):
+        if messages[i].get("role") == "user":
+            await db.conversations.update_one(
+                {"session_id": session_id},
+                {"$set": {f"messages.{i}.answered": False}}
+            )
+            return
+
 async def get_history(session_id: str):
     db = get_db()
     conv = await db.conversations.find_one({"session_id": session_id})

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from app.api.dependencies import get_current_user
-from app.db.repositories.chat_repo import get_history, save_message
+from app.db.repositories.chat_repo import get_history, save_message, mark_last_user_message_unanswered
 from app.models.chat import MessageRequest, MessageResponse
 from app.services.agent_service import get_agent_response, stream_agent_response
 
@@ -16,6 +16,8 @@ async def send_message(body: MessageRequest, user=Depends(get_current_user)):
     await save_message(body.session_id, "user", body.message)
     response, answered = await get_agent_response(body.message, body.session_id)
     await save_message(body.session_id, "assistant", response, answered)
+    if not answered:
+        await mark_last_user_message_unanswered(body.session_id)
     return MessageResponse(
         session_id=body.session_id,
         user_message=body.message,
@@ -44,6 +46,8 @@ async def stream_message(body: MessageRequest, user=Depends(get_current_user)):
                 pass
         answer_text = "".join(tokens)
         await save_message(body.session_id, "assistant", answer_text, not low_confidence)
+        if low_confidence:
+            await mark_last_user_message_unanswered(body.session_id)
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
 

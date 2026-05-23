@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import "./ElectricCastle.css";
 import bubbleLogo from "./images/logo.jpg";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const API_URL = "http://localhost:8000";
+const POLL_INTERVAL = 30000; // 30 secunde
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
@@ -30,14 +31,12 @@ async function ensureAuth() {
   const credentials = { email: "user@gmail.com", password: "testparola123" };
   try {
     const res = await fetch(`${API_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     });
     if (res.ok || res.status === 400) {
       const loginRes = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
       });
       const loginData = await loginRes.json();
@@ -54,6 +53,24 @@ async function ensureAuth() {
 
 function authHeaders() {
   return { "Content-Type": "application/json", authorization: `Bearer ${getToken()}` };
+}
+
+// ─── Sunet notificare ─────────────────────────────────────────────────────────
+
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch (e) { /* browser poate bloca AudioContext fara interactiune */ }
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -177,22 +194,52 @@ function AdminPanel({ onClose }) {
   const [statsLoading, setStatsL]   = useState(true);
   const [statsError, setStatsErr]   = useState("");
 
-  // Unanswered
-  const [unanswered, setUnanswered]     = useState([]);
-  const [unansweredLoad, setUnansLoad]  = useState(false);
+  // Unanswered + polling
+  const [unanswered, setUnanswered]         = useState([]);
+  const [unansweredLoad, setUnansLoad]      = useState(false);
+  const [unansweredCount, setUnansweredCount] = useState(0);
+  const [newUnanswered, setNewUnanswered]   = useState(0); // câte noi față de ultima verificare
+  const prevCountRef                        = useRef(null);
+  const pollTimerRef                        = useRef(null);
 
   // Favorites
-  const [favorites, setFavorites]       = useState([]);
-  const [suggestions, setSuggestions]   = useState([]);
-  const [favsLoading, setFavsLoad]      = useState(false);
-  const [newFav, setNewFav]             = useState("");
-  const [favMsg, setFavMsg]             = useState("");
+  const [favorites, setFavorites]   = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [favsLoading, setFavsLoad]  = useState(false);
+  const [newFav, setNewFav]         = useState("");
+  const [favMsg, setFavMsg]         = useState("");
 
   // Upload
   const [files, setFiles]         = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
   const fileInputRef              = useRef(null);
+
+  // ── Polling pentru unanswered count ──
+  const pollUnanswered = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/admin/stats`, { headers: authHeaders() });
+      if (!r.ok) return;
+      const data = await r.json();
+      const count = data.unanswered_count ?? 0;
+      setUnansweredCount(count);
+      if (prevCountRef.current !== null && count > prevCountRef.current) {
+        const diff = count - prevCountRef.current;
+        setNewUnanswered(diff);
+        playNotifSound();
+        // Reset badge dupa 5 secunde
+        setTimeout(() => setNewUnanswered(0), 5000);
+      }
+      prevCountRef.current = count;
+    } catch (e) { /* silently fail */ }
+  }, []);
+
+  // Porneste polling cand panoul e deschis
+  useEffect(() => {
+    pollUnanswered(); // primul check imediat
+    pollTimerRef.current = setInterval(pollUnanswered, POLL_INTERVAL);
+    return () => clearInterval(pollTimerRef.current);
+  }, [pollUnanswered]);
 
   // ── Fetch stats on mount ──
   useEffect(() => {
@@ -203,8 +250,12 @@ function AdminPanel({ onClose }) {
           fetch(`${API_URL}/admin/stats/hourly`,     { headers: authHeaders() }),
           fetch(`${API_URL}/admin/stats/categories`, { headers: authHeaders() }),
         ]);
-        if (sRes.ok) setStats(await sRes.json());
-        else setStatsErr(`HTTP ${sRes.status}`);
+        if (sRes.ok) {
+          const d = await sRes.json();
+          setStats(d);
+          setUnansweredCount(d.unanswered_count ?? 0);
+          prevCountRef.current = d.unanswered_count ?? 0;
+        } else setStatsErr(`HTTP ${sRes.status}`);
         if (hRes.ok) setHourly((await hRes.json()).hourly || []);
         if (cRes.ok) setCategories((await cRes.json()).categories || []);
       } catch (e) { setStatsErr(e.message); }
@@ -225,6 +276,15 @@ function AdminPanel({ onClose }) {
     fetchFavorites();
   }, [tab]);
 
+  async function loadUnanswered() {
+    setUnansLoad(true);
+    try {
+      const r = await fetch(`${API_URL}/admin/unanswered`, { headers: authHeaders() });
+      const d = await r.json();
+      setUnanswered(d.unanswered || []);
+    } finally { setUnansLoad(false); }
+  }
+
   async function fetchFavorites() {
     setFavsLoad(true);
     try {
@@ -235,17 +295,6 @@ function AdminPanel({ onClose }) {
       if (fRes.ok) setFavorites((await fRes.json()).favorites || []);
       if (sRes.ok) setSuggestions((await sRes.json()).suggestions || []);
     } finally { setFavsLoad(false); }
-  }
-
-  async function loadUnanswered() {
-    setUnansLoad(true);
-    try {
-      const response = await fetch(`${API_URL}/admin/unanswered`, { headers: authHeaders() });
-      const data = await response.json();
-      setUnanswered(data.unanswered || []);
-    } finally {
-      setUnansLoad(false);
-    }
   }
 
   async function addFavorite(question) {
@@ -311,8 +360,6 @@ function AdminPanel({ onClose }) {
     maxHeight: "90vh", display: "flex", flexDirection: "column", fontFamily: "Inter, sans-serif",
   };
   const cardStyle = { background: "var(--ec-white)", border: "2px solid var(--ec-black)", boxShadow: "4px 4px 0 var(--ec-black)", padding: "20px" };
-
-  // ── Max hourly for bar chart ──
   const maxHourly = Math.max(...hourly.map(h => h.count), 1);
   const maxCat    = Math.max(...categories.map(c => c.count), 1);
 
@@ -325,6 +372,17 @@ function AdminPanel({ onClose }) {
             <span style={{ color: "var(--ec-red)", fontFamily: "Oswald, sans-serif", fontSize: "22px", fontWeight: "bold", letterSpacing: "2px" }}>⚡ ADMIN</span>
             <span style={{ color: "#666", fontSize: "13px" }}>Electric Castle Dashboard</span>
           </div>
+          {/* Badge notificare în header */}
+          {newUnanswered > 0 && (
+            <div style={{
+              background: "var(--ec-red)", color: "#fff", padding: "6px 14px",
+              fontFamily: "Oswald, sans-serif", fontSize: "13px", fontWeight: "bold",
+              letterSpacing: "0.5px", animation: "pulse 1s infinite",
+              border: "2px solid rgba(255,255,255,0.3)",
+            }}>
+              🔔 +{newUnanswered} întrebare{newUnanswered > 1 ? "i" : ""} nouă fără răspuns
+            </div>
+          )}
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#fff", fontSize: "22px", cursor: "pointer" }}>✕</button>
         </div>
 
@@ -332,11 +390,25 @@ function AdminPanel({ onClose }) {
         <div style={{ display: "flex", borderBottom: "3px solid var(--ec-black)", flexShrink: 0, background: "var(--ec-white)", overflowX: "auto" }}>
           {TABS.map(([key, label]) => (
             <button key={key} onClick={() => setTab(key)} style={{
-              padding: "14px 22px", border: "none", borderBottom: tab === key ? "3px solid var(--ec-red)" : "3px solid transparent",
+              padding: "14px 22px", border: "none",
+              borderBottom: tab === key ? "3px solid var(--ec-red)" : "3px solid transparent",
               background: "none", fontFamily: "Oswald, sans-serif", fontSize: "14px", fontWeight: "bold",
               cursor: "pointer", color: tab === key ? "var(--ec-red)" : "#666", letterSpacing: "0.5px",
-              marginBottom: "-3px", whiteSpace: "nowrap",
-            }}>{label}</button>
+              marginBottom: "-3px", whiteSpace: "nowrap", position: "relative",
+            }}>
+              {label}
+              {/* Badge pe tab unanswered */}
+              {key === "unanswered" && unansweredCount > 0 && (
+                <span style={{
+                  position: "absolute", top: "8px", right: "6px",
+                  background: "var(--ec-red)", color: "#fff",
+                  borderRadius: "50%", width: "18px", height: "18px",
+                  fontSize: "10px", fontWeight: "bold",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "Inter, sans-serif",
+                }}>{unansweredCount > 99 ? "99+" : unansweredCount}</span>
+              )}
+            </button>
           ))}
         </div>
 
@@ -348,20 +420,18 @@ function AdminPanel({ onClose }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {statsLoading && <p style={{ color: "#888", textAlign: "center", padding: "40px" }}>Se încarcă...</p>}
               {statsError   && <p style={{ color: "var(--ec-red)", fontWeight: "bold" }}>⚠️ {statsError}</p>}
-
               {stats && (
                 <>
-                  {/* Stat cards */}
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
                     {[
-                      { icon: "💬", label: "Total mesaje",      value: stats.total_messages },
-                      { icon: "👥", label: "Conversații",        value: stats.total_conversations },
-                      { icon: "📅", label: "Conv. azi",          value: stats.conversations_today },
-                      { icon: "👤", label: "Useri totali",       value: stats.total_users },
-                      { icon: "🆕", label: "Useri noi azi",      value: stats.users_today },
-                      { icon: "⚠️", label: "Fără răspuns",       value: stats.unanswered_count },
-                      { icon: "👍", label: "Feedback pozitiv",   value: stats.feedback?.positive ?? 0 },
-                      { icon: "👎", label: "Feedback negativ",   value: stats.feedback?.negative ?? 0 },
+                      { icon: "💬", label: "Total mesaje",    value: stats.total_messages },
+                      { icon: "👥", label: "Conversații",      value: stats.total_conversations },
+                      { icon: "📅", label: "Conv. azi",        value: stats.conversations_today },
+                      { icon: "👤", label: "Useri totali",     value: stats.total_users },
+                      { icon: "🆕", label: "Useri noi azi",    value: stats.users_today },
+                      { icon: "⚠️", label: "Fără răspuns",     value: unansweredCount },
+                      { icon: "👍", label: "Feedback pozitiv", value: stats.feedback?.positive ?? 0 },
+                      { icon: "👎", label: "Feedback negativ", value: stats.feedback?.negative ?? 0 },
                     ].map(s => (
                       <div key={s.label} style={{ ...cardStyle, textAlign: "center", padding: "16px 12px" }}>
                         <div style={{ fontSize: "24px", marginBottom: "6px" }}>{s.icon}</div>
@@ -371,20 +441,13 @@ function AdminPanel({ onClose }) {
                     ))}
                   </div>
 
-                  {/* Grafic pe ore */}
                   {hourly.length > 0 && (
                     <div style={cardStyle}>
-                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>
-                        🕐 ACTIVITATE ULTIMELE 24H
-                      </h3>
+                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>🕐 ACTIVITATE ULTIMELE 24H</h3>
                       <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "80px" }}>
                         {hourly.map((h, i) => (
                           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                            <div style={{
-                              width: "100%", background: h.count > 0 ? "var(--ec-red)" : "#e5e7eb",
-                              height: `${Math.max((h.count / maxHourly) * 64, h.count > 0 ? 4 : 2)}px`,
-                              transition: "height 0.3s",
-                            }}/>
+                            <div style={{ width: "100%", background: h.count > 0 ? "var(--ec-red)" : "#e5e7eb", height: `${Math.max((h.count / maxHourly) * 64, h.count > 0 ? 4 : 2)}px`, transition: "height 0.3s" }}/>
                             {i % 4 === 0 && <span style={{ fontSize: "9px", color: "#888", whiteSpace: "nowrap" }}>{h.hour}</span>}
                           </div>
                         ))}
@@ -392,22 +455,15 @@ function AdminPanel({ onClose }) {
                     </div>
                   )}
 
-                  {/* Categorii */}
                   {categories.length > 0 && (
                     <div style={cardStyle}>
-                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>
-                        🏷️ CATEGORII POPULARE
-                      </h3>
+                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>🏷️ CATEGORII POPULARE</h3>
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         {[...categories].sort((a, b) => b.count - a.count).map(cat => (
                           <div key={cat.name} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <span style={{ width: "80px", fontSize: "13px", color: "#555", textTransform: "capitalize", flexShrink: 0 }}>{cat.name}</span>
-                            <div style={{ flex: 1, background: "#f0f0f0", height: "18px", position: "relative" }}>
-                              <div style={{
-                                width: `${(cat.count / maxCat) * 100}%`, height: "100%",
-                                background: CATEGORY_COLORS[cat.name] || "#94a3b8",
-                                transition: "width 0.4s",
-                              }}/>
+                            <div style={{ flex: 1, background: "#f0f0f0", height: "18px" }}>
+                              <div style={{ width: `${(cat.count / maxCat) * 100}%`, height: "100%", background: CATEGORY_COLORS[cat.name] || "#94a3b8", transition: "width 0.4s" }}/>
                             </div>
                             <span style={{ fontSize: "13px", fontWeight: "bold", color: "#333", width: "28px", textAlign: "right" }}>{cat.count}</span>
                           </div>
@@ -416,14 +472,8 @@ function AdminPanel({ onClose }) {
                     </div>
                   )}
 
-                  {/* Export */}
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button onClick={handleExport} style={{
-                      background: "var(--ec-black)", color: "#fff", border: "2px solid var(--ec-black)",
-                      boxShadow: "4px 4px 0 #555", padding: "12px 28px",
-                      fontFamily: "Oswald, sans-serif", fontSize: "16px", fontWeight: "bold",
-                      letterSpacing: "1px", cursor: "pointer",
-                    }}>⬇️ EXPORT CSV</button>
+                    <button onClick={handleExport} style={{ background: "var(--ec-black)", color: "#fff", border: "2px solid var(--ec-black)", boxShadow: "4px 4px 0 #555", padding: "12px 28px", fontFamily: "Oswald, sans-serif", fontSize: "16px", fontWeight: "bold", letterSpacing: "1px", cursor: "pointer" }}>⬇️ EXPORT CSV</button>
                   </div>
                 </>
               )}
@@ -434,62 +484,41 @@ function AdminPanel({ onClose }) {
           {tab === "favorites" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {favsLoading && <p style={{ color: "#888", textAlign: "center" }}>Se încarcă...</p>}
-
-              {/* Adaugă manual */}
               <div style={cardStyle}>
                 <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "14px", letterSpacing: "1px" }}>➕ ADAUGĂ ÎNTREBARE FAVORITĂ</h3>
                 <div style={{ display: "flex", gap: "10px" }}>
-                  <input
-                    value={newFav} onChange={e => setNewFav(e.target.value)}
-                    placeholder="Scrie întrebarea..."
+                  <input value={newFav} onChange={e => setNewFav(e.target.value)} placeholder="Scrie întrebarea..."
                     style={{ flex: 1, padding: "10px 14px", border: "2px solid var(--ec-black)", fontSize: "14px", outline: "none", fontFamily: "Inter, sans-serif" }}
-                    onKeyDown={e => e.key === "Enter" && newFav.trim() && addFavorite(newFav.trim())}
-                  />
-                  <button onClick={() => newFav.trim() && addFavorite(newFav.trim())} style={{
-                    background: "var(--ec-red)", color: "#fff", border: "2px solid var(--ec-black)",
-                    padding: "10px 20px", fontFamily: "Oswald, sans-serif", fontSize: "15px", fontWeight: "bold", cursor: "pointer",
-                  }}>ADAUGĂ</button>
+                    onKeyDown={e => e.key === "Enter" && newFav.trim() && addFavorite(newFav.trim())}/>
+                  <button onClick={() => newFav.trim() && addFavorite(newFav.trim())} style={{ background: "var(--ec-red)", color: "#fff", border: "2px solid var(--ec-black)", padding: "10px 20px", fontFamily: "Oswald, sans-serif", fontSize: "15px", fontWeight: "bold", cursor: "pointer" }}>ADAUGĂ</button>
                 </div>
                 {favMsg && <p style={{ marginTop: "8px", fontSize: "13px", fontWeight: "bold", color: favMsg.startsWith("✅") ? "#166534" : "var(--ec-red)" }}>{favMsg}</p>}
               </div>
 
-              {/* Sugestii automate */}
               {suggestions.length > 0 && (
                 <div style={cardStyle}>
-                  <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "14px", letterSpacing: "1px" }}>
-                    💡 SUGESTII (puse de 3+ ori)
-                  </h3>
+                  <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "14px", letterSpacing: "1px" }}>💡 SUGESTII (puse de 3+ ori)</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                     {suggestions.map((s, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", background: "#fffbeb", border: "1px solid #fcd34d" }}>
                         <span style={{ flex: 1, fontSize: "14px" }}>{s.question}</span>
                         <span style={{ fontSize: "12px", color: "#888", fontWeight: "bold" }}>×{s.count}</span>
-                        <button onClick={() => addFavorite(s.question)} style={{
-                          background: "var(--ec-black)", color: "#fff", border: "none",
-                          padding: "6px 12px", fontSize: "12px", fontFamily: "Oswald, sans-serif",
-                          fontWeight: "bold", cursor: "pointer", letterSpacing: "0.5px",
-                        }}>+ FAVORITE</button>
+                        <button onClick={() => addFavorite(s.question)} style={{ background: "var(--ec-black)", color: "#fff", border: "none", padding: "6px 12px", fontSize: "12px", fontFamily: "Oswald, sans-serif", fontWeight: "bold", cursor: "pointer" }}>+ FAVORITE</button>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Lista favorite */}
               <div style={cardStyle}>
-                <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "14px", letterSpacing: "1px" }}>
-                  ⭐ ÎNTREBĂRI FAVORITE ({favorites.length})
-                </h3>
+                <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "15px", marginBottom: "14px", letterSpacing: "1px" }}>⭐ ÎNTREBĂRI FAVORITE ({favorites.length})</h3>
                 {favorites.length === 0 && <p style={{ color: "#888", fontSize: "14px" }}>Nu există întrebări favorite încă.</p>}
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                   {favorites.map(fav => (
                     <div key={fav._id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", background: "#f8f8f8", border: "1px solid #e5e7eb" }}>
                       <span style={{ fontSize: "16px" }}>⭐</span>
-                      <span style={{ flex: 1, fontSize: "14px", color: "var(--ec-black)" }}>{fav.question}</span>
-                      <button onClick={() => deleteFavorite(fav._id)} style={{
-                        background: "none", border: "1px solid #dc2626", color: "#dc2626",
-                        padding: "4px 10px", fontSize: "12px", cursor: "pointer", fontWeight: "bold",
-                      }}>✕ ȘTERGE</button>
+                      <span style={{ flex: 1, fontSize: "14px" }}>{fav.question}</span>
+                      <button onClick={() => deleteFavorite(fav._id)} style={{ background: "none", border: "1px solid #dc2626", color: "#dc2626", padding: "4px 10px", fontSize: "12px", cursor: "pointer", fontWeight: "bold" }}>✕ ȘTERGE</button>
                     </div>
                   ))}
                 </div>
@@ -500,9 +529,14 @@ function AdminPanel({ onClose }) {
           {/* ── UNANSWERED TAB ── */}
           {tab === "unanswered" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>
-                Mesaje la care agentul nu a știut să răspundă. Folosește-le pentru a îmbunătăți knowledge base-ul.
-              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>
+                  Mesaje la care agentul nu a știut să răspundă.
+                </p>
+                <button onClick={loadUnanswered} style={{ background: "var(--ec-black)", color: "#fff", border: "none", padding: "6px 14px", fontFamily: "Oswald, sans-serif", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}>
+                  🔄 REFRESH
+                </button>
+              </div>
               {unansweredLoad && <p style={{ color: "#888", textAlign: "center" }}>Se încarcă...</p>}
               {!unansweredLoad && unanswered.length === 0 && (
                 <div style={{ ...cardStyle, textAlign: "center", color: "#22c55e", padding: "40px" }}>
@@ -529,29 +563,19 @@ function AdminPanel({ onClose }) {
           {/* ── UPLOAD TAB ── */}
           {tab === "upload" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>
-                Încarcă fișiere în knowledge base-ul backend-ului.
-              </p>
-              <label style={{
-                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                border: "3px dashed var(--ec-black)", background: files.length ? "#f0fff4" : "var(--ec-white)",
-                padding: "40px 24px", cursor: "pointer", gap: "12px",
-              }}
+              <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>Încarcă fișiere în knowledge base-ul backend-ului.</p>
+              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: "3px dashed var(--ec-black)", background: files.length ? "#f0fff4" : "var(--ec-white)", padding: "40px 24px", cursor: "pointer", gap: "12px" }}
                 onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); setFiles(e.dataTransfer.files); setUploadMsg(""); }}
-              >
-                <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt"
-                  style={{ display: "none" }} onChange={e => { setFiles(e.target.files); setUploadMsg(""); }}/>
+                onDrop={e => { e.preventDefault(); setFiles(e.dataTransfer.files); setUploadMsg(""); }}>
+                <input ref={fileInputRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt" style={{ display: "none" }} onChange={e => { setFiles(e.target.files); setUploadMsg(""); }}/>
                 <span style={{ fontSize: "40px" }}>📂</span>
-                <span style={{ fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", color: "var(--ec-black)" }}>
-                  DRAG & DROP sau click să selectezi
-                </span>
+                <span style={{ fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", color: "var(--ec-black)" }}>DRAG & DROP sau click să selectezi</span>
                 <span style={{ fontSize: "13px", color: "#888" }}>JPG, PNG, PDF, DOC, TXT</span>
               </label>
 
               {files.length > 0 && (
                 <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <span style={{ fontWeight: "bold", fontSize: "13px", color: "#888", letterSpacing: "0.5px", textTransform: "uppercase" }}>{files.length} fișier(e):</span>
+                  <span style={{ fontWeight: "bold", fontSize: "13px", color: "#888", textTransform: "uppercase" }}>{files.length} fișier(e):</span>
                   {Array.from(files).map((f, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
                       <span>{f.type.startsWith("image/") ? "🖼️" : f.type === "application/pdf" ? "📄" : "📝"}</span>
@@ -563,28 +587,43 @@ function AdminPanel({ onClose }) {
               )}
 
               {uploadMsg && (
-                <div style={{
-                  padding: "12px 16px", border: `2px solid ${uploadMsg.startsWith("✅") ? "#22c55e" : "var(--ec-red)"}`,
-                  background: uploadMsg.startsWith("✅") ? "#f0fff4" : "#fff0f0",
-                  color: uploadMsg.startsWith("✅") ? "#166534" : "var(--ec-red)",
-                  fontWeight: "bold", fontSize: "14px",
-                }}>{uploadMsg}</div>
+                <div style={{ padding: "12px 16px", border: `2px solid ${uploadMsg.startsWith("✅") ? "#22c55e" : "var(--ec-red)"}`, background: uploadMsg.startsWith("✅") ? "#f0fff4" : "#fff0f0", color: uploadMsg.startsWith("✅") ? "#166534" : "var(--ec-red)", fontWeight: "bold", fontSize: "14px" }}>{uploadMsg}</div>
               )}
 
-              <button onClick={handleUpload} disabled={uploading || !files.length} style={{
-                background: uploading || !files.length ? "#ccc" : "var(--ec-red)",
-                color: "#fff", border: "2px solid var(--ec-black)",
-                boxShadow: uploading || !files.length ? "none" : "4px 4px 0 var(--ec-black)",
-                padding: "14px", fontFamily: "Oswald, sans-serif", fontSize: "18px",
-                fontWeight: "bold", letterSpacing: "1px",
-                cursor: uploading || !files.length ? "not-allowed" : "pointer",
-              }}>
+              <button onClick={handleUpload} disabled={uploading || !files.length} style={{ background: uploading || !files.length ? "#ccc" : "var(--ec-red)", color: "#fff", border: "2px solid var(--ec-black)", boxShadow: uploading || !files.length ? "none" : "4px 4px 0 var(--ec-black)", padding: "14px", fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", letterSpacing: "1px", cursor: uploading || !files.length ? "not-allowed" : "pointer" }}>
                 {uploading ? "SE TRIMITE..." : "📤 TRIMITE LA BACKEND"}
               </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Toast notificare colț dreapta jos ── */}
+      {newUnanswered > 0 && (
+        <div style={{
+          position: "fixed", bottom: "24px", right: "24px",
+          background: "var(--ec-black)", color: "#fff",
+          border: "3px solid var(--ec-red)", boxShadow: "6px 6px 0 var(--ec-red)",
+          padding: "14px 20px", fontFamily: "Inter, sans-serif",
+          fontSize: "14px", fontWeight: "bold", zIndex: 10000,
+          display: "flex", alignItems: "center", gap: "10px",
+          animation: "slideIn 0.3s ease",
+        }}>
+          <span style={{ fontSize: "20px" }}>🔔</span>
+          <span>+{newUnanswered} întrebare{newUnanswered > 1 ? "i" : ""} nouă fără răspuns!</span>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes slideIn {
+          from { transform: translateX(100px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -604,11 +643,9 @@ function NavBar({ unread, onBellClick, onAuthClick, onAdminClick, loggedIn, chil
           <div className="ec-nav__logo-text-bottom">CASTLE</div>
         </div>
       </div>
-
       <div className="ec-nav__links">
         {NAV_LINKS.map(l => <a key={l} href="#" className="ec-nav__link">{l}</a>)}
       </div>
-
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {loggedIn && isAdmin() && (
           <button onClick={onAdminClick} style={{ background: "var(--ec-red)", color: "#fff", border: "2px solid rgba(255,255,255,0.4)", padding: "6px 14px", fontFamily: "Oswald, sans-serif", fontSize: "13px", fontWeight: "bold", letterSpacing: "1px", cursor: "pointer" }}>
@@ -633,8 +670,6 @@ function NavBar({ unread, onBellClick, onAuthClick, onAdminClick, loggedIn, chil
   );
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-
 function Hero() {
   return (
     <div className="ec-hero">
@@ -644,9 +679,7 @@ function Hero() {
         <span className="ec-hero__title-castle">CASTLE</span>
       </h1>
       <div className="ec-hero__cta" style={{ marginTop: "24px" }}>
-        <button className="ec-btn--outline" onClick={() => alert("Guided Planner flow coming next!")}>
-          Let's build your plan
-        </button>
+        <button className="ec-btn--outline" onClick={() => alert("Guided Planner flow coming next!")}>Let's build your plan</button>
       </div>
     </div>
   );
@@ -677,9 +710,7 @@ function LineupSection() {
       <div className="ec-lineup__inner">
         <h2 style={{ color: "var(--ec-white)", fontFamily: "Oswald, sans-serif", fontSize: "32px", marginBottom: "20px" }}>DISCOVER THE STAGES</h2>
         <div className="ec-lineup__stages">
-          {STAGES.map(s => (
-            <span key={s.label} className={s.cls} style={{ background: "var(--ec-black)", color: "var(--ec-white)", border: "none", fontWeight: "bold" }}>{s.label}</span>
-          ))}
+          {STAGES.map(s => <span key={s.label} className={s.cls} style={{ background: "var(--ec-black)", color: "var(--ec-white)", border: "none", fontWeight: "bold" }}>{s.label}</span>)}
         </div>
       </div>
     </section>
@@ -737,7 +768,6 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
           <div className="ec-chat__header-status"><div className="ec-chat__status-dot"/>Online acum</div>
         </div>
       </div>
-
       <div className="ec-chat__messages">
         {messages.map((msg, i) => (
           <div key={i} className={`ec-chat__msg-row ec-chat__msg-row--${msg.role}`}>
@@ -763,14 +793,12 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
         )}
         <div ref={messagesEndRef}/>
       </div>
-
       <div className="ec-chat__chips">
         {CHIPS.map(chip => {
           const label = chip.slice(3).trim();
           return <button key={chip} className="ec-chat__chip" onClick={() => onChip(label)} style={{ background: "var(--ec-black)", color: "var(--ec-white)", border: "none", borderRadius: "0" }}>{chip}</button>;
         })}
       </div>
-
       <div className="ec-chat__input-row">
         <input className="ec-chat__input" value={input} onChange={onInputChange} onKeyDown={onKeyDown} placeholder="Întreabă orice despre EC..." style={{ background: "var(--ec-light-gray)", color: "var(--ec-black)", border: "2px solid var(--ec-black)", borderRadius: "0" }}/>
         <button className="ec-chat__send" onClick={() => onSend()} style={{ background: "var(--ec-red)", border: "2px solid var(--ec-black)", borderRadius: "0", boxShadow: "none" }}>
@@ -798,7 +826,6 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [loggedIn, setLoggedIn]   = useState(!!getToken());
   const messagesEndRef            = useRef(null);
-  // track message indexes for feedback (only assistant messages)
   const msgIndexRef               = useRef(0);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, typing]);
@@ -813,32 +840,20 @@ export default function App() {
     try {
       const authed = await ensureAuth();
       if (!authed) throw new Error("Auth failed");
-
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "authorization": `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({
-          session_id: getSessionId(),
-          message: userMsg,
-        }),
+        headers: { "Content-Type": "application/json", "authorization": `Bearer ${getToken()}` },
+        body: JSON.stringify({ session_id: getSessionId(), message: userMsg }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
       if (!res.body) throw new Error("No response body");
-
       const aiMsgIndex = msgIndexRef.current * 2 + 1;
       msgIndexRef.current += 1;
-
       setTyping(false);
       setMessages(prev => [...prev, { role: "ai", text: "", index: aiMsgIndex, feedback: null }]);
-
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -852,16 +867,11 @@ export default function App() {
             if (data.token) {
               setMessages(prev => {
                 const updated = [...prev];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  text: updated[updated.length - 1].text + data.token,
-                };
+                updated[updated.length - 1] = { ...updated[updated.length - 1], text: updated[updated.length - 1].text + data.token };
                 return updated;
               });
             }
-          } catch {
-            continue;
-          }
+          } catch { continue; }
         }
       }
     } catch (err) {
@@ -882,19 +892,15 @@ export default function App() {
   }
 
   function handleKey(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
-
   function handleBell() {
     setNotifOpen(prev => !prev); setChatOpen(false);
     if (!notifOpen) { setUnread(0); setNotifications(n => n.map(x => ({ ...x, read: true }))); }
   }
-
   function handleBubble() { setChatOpen(prev => !prev); setNotifOpen(false); }
-
   function handleAuthClick() {
     if (loggedIn) { logout(); setLoggedIn(false); setShowAdmin(false); }
     else setShowAuth(true);
   }
-
   function handleAuthSuccess() { setLoggedIn(true); setShowAuth(false); }
 
   return (
@@ -902,20 +908,14 @@ export default function App() {
       <NavBar unread={unread} onBellClick={handleBell} onAuthClick={handleAuthClick} onAdminClick={() => setShowAdmin(true)} loggedIn={loggedIn}>
         {notifOpen && <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)}/>}
       </NavBar>
-
       <Hero/><InfoSection/><LineupSection/>
-
       <AiBubble chatOpen={chatOpen} bubbleHint={bubbleHint} onToggle={handleBubble}/>
-
       {chatOpen && (
-        <ChatWindow
-          messages={messages} typing={typing} input={input}
+        <ChatWindow messages={messages} typing={typing} input={input}
           onInputChange={e => setInput(e.target.value)}
           onSend={sendMessage} onKeyDown={handleKey} onChip={sendMessage}
-          messagesEndRef={messagesEndRef} onFeedback={handleFeedback}
-        />
+          messagesEndRef={messagesEndRef} onFeedback={handleFeedback}/>
       )}
-
       {showAuth  && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess}/>}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)}/>}
     </div>

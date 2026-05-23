@@ -4,7 +4,7 @@ import bubbleLogo from "./images/logo.jpg";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const API_URL = "http://localhost:8000";
+const API_URL = "http://localhost:8001";
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 

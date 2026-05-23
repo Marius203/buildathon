@@ -17,6 +17,7 @@ from app.embeddings.ollama import EMBED_DIM, embed_many
 
 RO_PATH = Path("data/mock/kb_chunks.ro.json")
 EN_PATH = Path("data/mock/kb_chunks.en.json")
+EC_SOURCES_PATH = Path("data/mock/kb_chunks.ec_sources.json")
 
 BATCH_SIZE = 16
 
@@ -25,6 +26,14 @@ def _load(path: Path) -> list[dict]:
     if not path.exists():
         print(f"[err] missing {path}", file=sys.stderr)
         sys.exit(1)
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _load_optional(path: Path) -> list[dict]:
+    """Like _load but returns [] (with a notice) when the file is absent."""
+    if not path.exists():
+        print(f"[info] {path} not present, skipping")
+        return []
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -66,10 +75,18 @@ def embed_chunks(chunks: list[dict]) -> None:
 
 
 def main() -> None:
-    ro = _load(RO_PATH)
-    en = _load(EN_PATH)
-    all_chunks = ro + en
-    print(f"[info] loaded {len(ro)} RO + {len(en)} EN = {len(all_chunks)} chunks")
+    ro = _load_optional(RO_PATH)
+    en = _load_optional(EN_PATH)
+    ec = _load_optional(EC_SOURCES_PATH)
+    all_chunks = ro + en + ec
+    print(
+        f"[info] loaded {len(ro)} RO + {len(en)} EN + {len(ec)} EC-sources "
+        f"= {len(all_chunks)} chunks"
+    )
+    if not all_chunks:
+        print("[err] no chunks to embed; run scripts.chunk_kb and/or "
+              "scripts.ingest_ec_sources first", file=sys.stderr)
+        sys.exit(1)
 
     embed_chunks(all_chunks)
 

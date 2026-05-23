@@ -1,4 +1,4 @@
-"""End-to-end answerer: retrieve via search_kb, generate via qwen 14b.
+"""End-to-end answerer: retrieve via search_kb, generate via Claude Haiku.
 
 If retrieval has no strong match (top vector distance >= LOW_CONFIDENCE_DISTANCE),
 swap to a "no context" prompt so the model refuses cleanly instead of riffing.
@@ -10,13 +10,10 @@ from typing import Any
 from collections.abc import AsyncIterator, Iterator
 
 from app.agent.prompts import format_context, no_context_prompt, system_prompt
-from app.llm.ollama_client import OLLAMA_SMALL_MODEL, chat, chat_stream, chat_stream_async
+from app.llm.claude_client import CLAUDE_MODEL, chat, chat_stream, chat_stream_async
 from app.tools.search_kb import DEFAULT_K, has_strong_match, search_kb
 
-# 3B fits fully on the 6GB GPU, so generation is much faster than 14B-on-CPU.
-# Tradeoff: weaker at Romanian fluency and at following the few-shot
-# anti-hallucination rules — keep an eye on refusal quality.
-ANSWERER_MODEL = OLLAMA_SMALL_MODEL
+ANSWERER_MODEL = CLAUDE_MODEL
 
 LLM_OPTIONS = {"temperature": 0.2}
 

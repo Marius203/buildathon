@@ -22,7 +22,7 @@ npm run lint
 cd agent
 python -m venv .venv && .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env   # fill OLLAMA_BASE_URL, MONGODB_URI
+# All env vars live in the repo-root .env (copy ../.env.example ../.env if missing).
 
 # One-time data pipeline (run in order):
 python -m scripts.chunk_kb       # kb/kb.md → data/mock/kb_chunks.ro.json
@@ -44,7 +44,7 @@ python -u -m scripts.eval_answers
 cd backend
 python -m venv .venv && .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-# Fill MONGODB_URI, JWT_SECRET in .env
+# Env vars (MONGODB_URI, JWT_SECRET, UPLOADTHING_*) come from the repo-root .env.
 
 python -m uvicorn app.main:app --reload --port 8001
 ```
@@ -79,13 +79,13 @@ Browser → Frontend (React/Vite :5173)
 
 ### Backend Service
 - Auth via JWT (`app/api/routes/auth.py`); sessions, chat, and feedback stored in MongoDB via Motor async driver.
-- `app/services/agent_service.py` is currently a stub returning mock responses — this is the integration point to wire to the real agent `/answer` endpoint.
+- `app/services/agent_service.py` proxies to the agent service at `http://localhost:8000`: `get_agent_response` calls `POST /answer`; `stream_agent_response` proxies `POST /answer/stream` line-by-line. Both degrade gracefully when the agent is down.
 - MongoDB collections: `users`, `sessions`, `messages`, `events`, `feedback`.
 
 ### Frontend
 - Single-page React app (`src/App.jsx`): hero section, chat bubble, EC info cards, stages grid.
 - Brand styles in `src/ElectricCastle.css` (EC black/red/white palette, Oswald font).
-- Calls `backend /chat/message`; currently receives mock responses until agent integration is complete.
+- Calls `backend /chat/message`, which forwards to the agent's `/answer` endpoint (integration is live).
 
 ## Key Data Contracts
 

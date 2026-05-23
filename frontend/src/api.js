@@ -1,5 +1,5 @@
 // src/api.js
-const API_URL = "http://localhost:8000";
+const API_URL = "http://localhost:8001";
 
 // Helper pentru a lua token-ul salvat
 const getAuthHeaders = () => {

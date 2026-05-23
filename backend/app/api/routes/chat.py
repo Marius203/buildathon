@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from app.api.dependencies import get_current_user
-from app.db.repositories.chat_repo import get_history, save_message, mark_last_user_message_unanswered
-from app.db.repositories.chat_repo import get_history, get_or_set_session_lang, save_message
+from app.db.repositories.chat_repo import get_history, get_or_set_session_lang, mark_last_user_message_unanswered, save_message
 from app.models.chat import MessageRequest, MessageResponse
 from app.services.agent_service import get_agent_response, stream_agent_response
 

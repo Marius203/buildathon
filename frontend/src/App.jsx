@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import "./ElectricCastle.css";
-import bubbleLogo from "./images/logo.jpg";
+import bubbleLogo from "./images/logo.jpg"; // Asigură-te că imaginea e la locul ei
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -8,9 +8,9 @@ const API_URL = "http://localhost:8000";
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
-function getToken() {
-  return localStorage.getItem("ec_token");
-}
+function getToken()     { return localStorage.getItem("ec_token"); }
+function getUserEmail() { return localStorage.getItem("ec_email"); }
+function isAdmin()      { return localStorage.getItem("ec_role") === "admin"; }
 
 function getSessionId() {
   let sid = localStorage.getItem("ec_session_id");
@@ -21,21 +21,37 @@ function getSessionId() {
   return sid;
 }
 
+function logout() {
+  localStorage.removeItem("ec_token");
+  localStorage.removeItem("ec_email");
+  localStorage.removeItem("ec_role");
+}
+
 // Auto-register/login un guest user la primul mesaj
 async function ensureAuth() {
   if (getToken()) return true;
-  const email = `user@gmail.com`;
-  const password = "testparola123";
+  const credentials = { email: "user@gmail.com", password: "testparola123" };
+  
   try {
     const res = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(credentials),
     });
-    const data = await res.json();
-    if (data.access_token) {
-      localStorage.setItem("ec_token", data.access_token);
-      return true;
+    
+    if (res.ok || res.status === 400) { 
+        const loginRes = await fetch(`${API_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(credentials)
+        });
+        const loginData = await loginRes.json();
+        if (loginData.access_token) {
+            localStorage.setItem("ec_token", loginData.access_token);
+            localStorage.setItem("ec_email", "user@gmail.com");
+            localStorage.setItem("ec_role", "user");
+            return true;
+        }
     }
   } catch (e) {
     console.error("Auth error:", e);
@@ -47,18 +63,18 @@ async function ensureAuth() {
 
 const INITIAL_NOTIFICATIONS = [
   { id: 1, text: "🎵 Line-up complet anunțat! Verifică artiștii tăi favoriți", time: "acum 2 min", read: false },
-  { id: 2, text: "🚌 Shuttle-urile din Cluj sunt aproape sold out!", time: "acum 1h", read: false },
-  { id: 3, text: "⛺ Locuri de glamping disponibile – rezervă acum", time: "acum 3h", read: true },
+  { id: 2, text: "🚌 Shuttle-urile din Cluj sunt aproape sold out!", time: "acum 1h",  read: false },
+  { id: 3, text: "⛺ Locuri de glamping disponibile – rezervă acum",              time: "acum 3h",  read: true  },
 ];
 
 const NAV_LINKS = ["Tickets", "Info", "Artists", "Gallery", "Contact"];
 
 const STAGES = [
   { label: "Main Stage",     cls: "ec-lineup__stage ec-lineup__stage--featured" },
-  { label: "Forest Stage",   cls: "ec-lineup__stage ec-lineup__stage--mid" },
-  { label: "Electric Stage", cls: "ec-lineup__stage ec-lineup__stage--mid" },
-  { label: "Live Stage",     cls: "ec-lineup__stage ec-lineup__stage--sm" },
-  { label: "Secret Stage",   cls: "ec-lineup__stage ec-lineup__stage--sm" },
+  { label: "Forest Stage",   cls: "ec-lineup__stage ec-lineup__stage--mid"      },
+  { label: "Electric Stage", cls: "ec-lineup__stage ec-lineup__stage--mid"      },
+  { label: "Live Stage",     cls: "ec-lineup__stage ec-lineup__stage--sm"       },
+  { label: "Secret Stage",   cls: "ec-lineup__stage ec-lineup__stage--sm"       },
 ];
 
 const INFO_CARDS = [
@@ -78,9 +94,384 @@ function formatText(text) {
     .replace(/\n/g, "<br/>");
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Auth Modal (Login / Register) ───────────────────────────────────────────
 
-function NavBar({ unread, onBellClick, children }) {
+function AuthModal({ onClose, onSuccess }) {
+  const [mode, setMode]       = useState("login"); // "login" | "register"
+  const [email, setEmail]     = useState("");
+  const [password, setPass]   = useState("");
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "register") {
+        const r = await fetch(`${API_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        if (!r.ok) {
+          const d = await r.json();
+          throw new Error(d.detail || "Eroare la înregistrare");
+        }
+      }
+
+      // Login
+      const r2 = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!r2.ok) {
+        const d = await r2.json();
+        throw new Error(d.detail || "Email sau parolă greșită");
+      }
+      
+      const data = await r2.json();
+      localStorage.setItem("ec_token", data.access_token);
+      localStorage.setItem("ec_email", email);
+      
+      // FIX PENTRU ADMIN: Verificam daca emailul contine "admin"
+      let userRole = data.role;
+      if (!userRole && email.toLowerCase().includes("admin")) {
+        userRole = "admin";
+      } else if (!userRole) {
+        userRole = "user";
+      }
+      
+      localStorage.setItem("ec_role", userRole);
+      onSuccess();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999,
+    }}>
+      <div style={{
+        background: "var(--ec-white)", border: "3px solid var(--ec-black)",
+        boxShadow: "8px 8px 0 var(--ec-black)", width: "100%", maxWidth: "420px",
+        fontFamily: "Inter, sans-serif",
+      }}>
+        {/* Header */}
+        <div style={{ background: "var(--ec-red)", padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ color: "#fff", fontFamily: "Oswald, sans-serif", fontSize: "20px", fontWeight: "bold", letterSpacing: "1px" }}>
+            {mode === "login" ? "LOGIN" : "REGISTER"}
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#fff", fontSize: "20px", cursor: "pointer" }}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: "28px 24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div>
+            <label style={{ display: "block", fontWeight: "bold", fontSize: "13px", marginBottom: "6px", color: "var(--ec-black)", letterSpacing: "0.5px" }}>EMAIL</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)} required
+              style={{ width: "100%", padding: "12px 14px", border: "2px solid var(--ec-black)", outline: "none", fontSize: "15px", boxSizing: "border-box", fontFamily: "Inter, sans-serif" }}
+              placeholder="email@exemplu.com"
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontWeight: "bold", fontSize: "13px", marginBottom: "6px", color: "var(--ec-black)", letterSpacing: "0.5px" }}>PAROLĂ</label>
+            <input
+              type="password" value={password} onChange={e => setPass(e.target.value)} required minLength={6}
+              style={{ width: "100%", padding: "12px 14px", border: "2px solid var(--ec-black)", outline: "none", fontSize: "15px", boxSizing: "border-box", fontFamily: "Inter, sans-serif" }}
+              placeholder="••••••••"
+            />
+          </div>
+
+          {error && (
+            <div style={{ background: "#fff0f0", border: "2px solid var(--ec-red)", padding: "10px 14px", color: "var(--ec-red)", fontSize: "13px", fontWeight: "bold" }}>
+              ⚠️ {error}
+            </div>
+          )}
+
+          <button
+            type="submit" disabled={loading}
+            style={{ background: loading ? "#888" : "var(--ec-red)", color: "#fff", border: "2px solid var(--ec-black)", padding: "14px", fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", letterSpacing: "1px", cursor: loading ? "not-allowed" : "pointer", boxShadow: "4px 4px 0 var(--ec-black)" }}
+          >
+            {loading ? "SE PROCESEAZĂ..." : mode === "login" ? "INTRĂ ÎN CONT" : "CREEAZĂ CONT"}
+          </button>
+
+          <p style={{ textAlign: "center", fontSize: "14px", color: "#555", margin: 0 }}>
+            {mode === "login" ? "Nu ai cont? " : "Ai deja cont? "}
+            <button type="button" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+              style={{ background: "none", border: "none", color: "var(--ec-red)", fontWeight: "bold", cursor: "pointer", fontSize: "14px", padding: 0 }}>
+              {mode === "login" ? "Înregistrează-te" : "Loghează-te"}
+            </button>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Admin Panel ──────────────────────────────────────────────────────────────
+
+function AdminPanel({ onClose }) {
+  const [tab, setTab]             = useState("stats");   // "stats" | "upload"
+  const [stats, setStats]         = useState(null);
+  const [statsLoading, setStatsL] = useState(true);
+  const [statsError, setStatsErr] = useState("");
+  const [files, setFiles]         = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState("");
+  const fileInputRef              = useRef(null);
+
+  // Load stats on mount
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const r = await fetch(`${API_URL}/admin/stats`, {
+          headers: { authorization: `Bearer ${getToken()}` },
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        setStats(await r.json());
+      } catch (e) {
+        setStatsErr("Nu s-au putut încărca statisticile: " + e.message);
+      } finally {
+        setStatsL(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
+  async function handleExport() {
+    try {
+      // CORECTAT: URL-ul include /stats/export
+      const r = await fetch(`${API_URL}/admin/stats/export`, {
+        headers: { authorization: `Bearer ${getToken()}` },
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const blob = await r.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `ec-stats-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export eșuat: " + e.message);
+    }
+  }
+
+  async function handleUpload() {
+    if (!files.length) return;
+    setUploading(true);
+    setUploadMsg("");
+    const form = new FormData();
+    // CORECTAT: Numele câmpului trebuie să fie "file" ca să se potrivească cu backend-ul FastAPI
+    Array.from(files).forEach(f => form.append("file", f));
+    try {
+      // CORECTAT: URL-ul include /kb/upload
+      const r = await fetch(`${API_URL}/admin/kb/upload`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${getToken()}` },
+        body: form,
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const d = await r.json();
+      setUploadMsg(`✅ ${d.message || "Fișiere încărcate cu succes!"}`);
+      setFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (e) {
+      setUploadMsg("❌ Upload eșuat: " + e.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const statCards = stats ? [
+    { label: "Total mesaje",      value: stats.total_messages   ?? "—", icon: "💬" },
+    { label: "Sesiuni active",    value: stats.total_conversations ?? "—", icon: "👥" }, // Adaptat dupa response-ul de la backend
+    { label: "Fără Răspuns",       value: stats.unanswered_count ?? "—", icon: "⚠️" }, // Adaptat dupa response-ul de la backend
+  ] : [];
+
+  const topQuestions = stats?.top_questions ?? [];
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      zIndex: 9999, padding: "16px", boxSizing: "border-box",
+    }}>
+      <div style={{
+        background: "#f5f5f5", border: "3px solid var(--ec-black)",
+        boxShadow: "10px 10px 0 var(--ec-black)", width: "100%", maxWidth: "820px",
+        maxHeight: "90vh", display: "flex", flexDirection: "column",
+        fontFamily: "Inter, sans-serif",
+      }}>
+        {/* Header */}
+        <div style={{ background: "var(--ec-black)", padding: "18px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ color: "var(--ec-red)", fontFamily: "Oswald, sans-serif", fontSize: "22px", fontWeight: "bold", letterSpacing: "2px" }}>⚡ ADMIN</span>
+            <span style={{ color: "#666", fontSize: "13px" }}>Electric Castle Dashboard</span>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "#fff", fontSize: "22px", cursor: "pointer" }}>✕</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", borderBottom: "3px solid var(--ec-black)", flexShrink: 0, background: "var(--ec-white)" }}>
+          {[["stats", "📊 Statistici"], ["upload", "📁 Upload Fișiere"]].map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} style={{
+              padding: "14px 28px", border: "none", borderBottom: tab === key ? "3px solid var(--ec-red)" : "3px solid transparent",
+              background: "none", fontFamily: "Oswald, sans-serif", fontSize: "15px", fontWeight: "bold",
+              cursor: "pointer", color: tab === key ? "var(--ec-red)" : "#666", letterSpacing: "0.5px",
+              marginBottom: "-3px",
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+
+          {/* ── STATS TAB ── */}
+          {tab === "stats" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              {statsLoading && <p style={{ color: "#888", textAlign: "center", padding: "40px" }}>Se încarcă statisticile...</p>}
+              {statsError  && <p style={{ color: "var(--ec-red)", fontWeight: "bold" }}>⚠️ {statsError}</p>}
+
+              {stats && (
+                <>
+                  {/* Stat cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "16px" }}>
+                    {statCards.map(s => (
+                      <div key={s.label} style={{
+                        background: "var(--ec-white)", border: "2px solid var(--ec-black)",
+                        boxShadow: "4px 4px 0 var(--ec-black)", padding: "20px 16px", textAlign: "center",
+                      }}>
+                        <div style={{ fontSize: "28px", marginBottom: "8px" }}>{s.icon}</div>
+                        <div style={{ fontSize: "32px", fontWeight: "bold", fontFamily: "Oswald, sans-serif", color: "var(--ec-red)" }}>{s.value}</div>
+                        <div style={{ fontSize: "12px", color: "#888", marginTop: "4px", letterSpacing: "0.5px", textTransform: "uppercase" }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Top questions */}
+                  {topQuestions.length > 0 && (
+                    <div style={{ background: "var(--ec-white)", border: "2px solid var(--ec-black)", boxShadow: "4px 4px 0 var(--ec-black)", padding: "20px" }}>
+                      <h3 style={{ fontFamily: "Oswald, sans-serif", fontSize: "16px", marginBottom: "16px", color: "var(--ec-black)", letterSpacing: "1px" }}>
+                        🔥 TOP ÎNTREBĂRI
+                      </h3>
+                      {topQuestions.map((q, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 0", borderBottom: i < topQuestions.length - 1 ? "1px solid #eee" : "none" }}>
+                          <span style={{ background: "var(--ec-red)", color: "#fff", width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "bold", flexShrink: 0 }}>{i + 1}</span>
+                          <span style={{ flex: 1, fontSize: "14px", color: "var(--ec-black)" }}>{q.question || q}</span>
+                          {q.count && <span style={{ fontSize: "12px", color: "#888", fontWeight: "bold" }}>×{q.count}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Export button */}
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <button onClick={handleExport} style={{
+                      background: "var(--ec-black)", color: "#fff", border: "2px solid var(--ec-black)",
+                      boxShadow: "4px 4px 0 #555", padding: "12px 28px",
+                      fontFamily: "Oswald, sans-serif", fontSize: "16px", fontWeight: "bold",
+                      letterSpacing: "1px", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px",
+                    }}>
+                      ⬇️ EXPORT CSV
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── UPLOAD TAB ── */}
+          {tab === "upload" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>
+                Încarcă fișiere (imagini, PDF-uri, documente) direct în knowledge base-ul backend-ului.
+              </p>
+
+              {/* Drop zone */}
+              <label style={{
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                border: "3px dashed var(--ec-black)", background: files.length ? "#f0fff4" : "var(--ec-white)",
+                padding: "40px 24px", cursor: "pointer", gap: "12px", transition: "background 0.2s",
+              }}
+                onDragOver={e => e.preventDefault()}
+                onDrop={e => { e.preventDefault(); setFiles(e.dataTransfer.files); setUploadMsg(""); }}
+              >
+                <input
+                  ref={fileInputRef} type="file"
+                  accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json"
+                  style={{ display: "none" }}
+                  onChange={e => { setFiles(e.target.files); setUploadMsg(""); }}
+                />
+                <span style={{ fontSize: "40px" }}>📂</span>
+                <span style={{ fontFamily: "Oswald, sans-serif", fontSize: "18px", fontWeight: "bold", color: "var(--ec-black)" }}>
+                  DRAG & DROP sau click să selectezi
+                </span>
+                <span style={{ fontSize: "13px", color: "#888" }}>
+                  JPG, PNG, PDF, DOC, TXT, CSV, JSON
+                </span>
+              </label>
+
+              {/* File list */}
+              {files.length > 0 && (
+                <div style={{ background: "var(--ec-white)", border: "2px solid var(--ec-black)", padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <span style={{ fontWeight: "bold", fontSize: "13px", color: "#888", letterSpacing: "0.5px", textTransform: "uppercase" }}>{files.length} fișier(e) selectat(e):</span>
+                  {Array.from(files).map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "14px" }}>
+                      <span style={{ fontSize: "18px" }}>
+                        {f.type.startsWith("image/") ? "🖼️" : f.type === "application/pdf" ? "📄" : "📝"}
+                      </span>
+                      <span style={{ flex: 1, color: "var(--ec-black)", fontWeight: "500" }}>{f.name}</span>
+                      <span style={{ color: "#888", fontSize: "12px" }}>{(f.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadMsg && (
+                <div style={{
+                  padding: "12px 16px", border: `2px solid ${uploadMsg.startsWith("✅") ? "#22c55e" : "var(--ec-red)"}`,
+                  background: uploadMsg.startsWith("✅") ? "#f0fff4" : "#fff0f0",
+                  color: uploadMsg.startsWith("✅") ? "#166534" : "var(--ec-red)",
+                  fontWeight: "bold", fontSize: "14px",
+                }}>
+                  {uploadMsg}
+                </div>
+              )}
+
+              <button
+                onClick={handleUpload}
+                disabled={uploading || !files.length}
+                style={{
+                  background: uploading || !files.length ? "#ccc" : "var(--ec-red)",
+                  color: "#fff", border: "2px solid var(--ec-black)",
+                  boxShadow: uploading || !files.length ? "none" : "4px 4px 0 var(--ec-black)",
+                  padding: "14px", fontFamily: "Oswald, sans-serif", fontSize: "18px",
+                  fontWeight: "bold", letterSpacing: "1px",
+                  cursor: uploading || !files.length ? "not-allowed" : "pointer",
+                }}
+              >
+                {uploading ? "SE TRIMITE..." : "📤 TRIMITE LA BACKEND"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── NavBar ───────────────────────────────────────────────────────────────────
+
+function NavBar({ unread, onBellClick, onAuthClick, onAdminClick, loggedIn, children }) {
   return (
     <nav className="ec-nav">
       <div className="ec-nav__logo">
@@ -102,20 +493,49 @@ function NavBar({ unread, onBellClick, children }) {
         ))}
       </div>
 
-      <div style={{ position: "relative" }}>
-        <button className="ec-nav__bell" onClick={onBellClick} aria-label="Notificări">
-          <svg width="24" height="24" fill="none"
-            stroke="var(--ec-white)" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
-          {unread > 0 && <span className="ec-nav__bell-badge">{unread}</span>}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {/* Admin button – only for admins */}
+        {loggedIn && isAdmin() && (
+          <button onClick={onAdminClick} style={{
+            background: "var(--ec-red)", color: "#fff",
+            border: "2px solid rgba(255,255,255,0.4)",
+            padding: "6px 14px", fontFamily: "Oswald, sans-serif",
+            fontSize: "13px", fontWeight: "bold", letterSpacing: "1px",
+            cursor: "pointer",
+          }}>
+            ⚡ ADMIN
+          </button>
+        )}
+
+        {/* Login / Logout */}
+        <button onClick={onAuthClick} style={{
+          background: "transparent", color: "var(--ec-white)",
+          border: "2px solid rgba(255,255,255,0.5)",
+          padding: "6px 14px", fontFamily: "Oswald, sans-serif",
+          fontSize: "13px", fontWeight: "bold", letterSpacing: "1px",
+          cursor: "pointer",
+        }}>
+          {loggedIn ? `👤 ${getUserEmail()?.split("@")[0]?.toUpperCase()}` : "LOGIN"}
         </button>
-        {children}
+
+        {/* Bell */}
+        <div style={{ position: "relative" }}>
+          <button className="ec-nav__bell" onClick={onBellClick} aria-label="Notificări">
+            <svg width="24" height="24" fill="none"
+              stroke="var(--ec-white)" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {unread > 0 && <span className="ec-nav__bell-badge">{unread}</span>}
+          </button>
+          {children}
+        </div>
       </div>
     </nav>
   );
 }
+
+// ─── Hero ─────────────────────────────────────────────────────────────────────
 
 function Hero() {
   return (
@@ -133,6 +553,8 @@ function Hero() {
     </div>
   );
 }
+
+// ─── InfoSection ──────────────────────────────────────────────────────────────
 
 function InfoSection() {
   return (
@@ -156,6 +578,8 @@ function InfoSection() {
   );
 }
 
+// ─── LineupSection ────────────────────────────────────────────────────────────
+
 function LineupSection() {
   return (
     <section className="ec-lineup" style={{ background: "var(--ec-red)", padding: "4rem 2rem" }}>
@@ -175,6 +599,8 @@ function LineupSection() {
     </section>
   );
 }
+
+// ─── NotifPanel ───────────────────────────────────────────────────────────────
 
 function NotifPanel({ notifications, onClose }) {
   return (
@@ -198,6 +624,8 @@ function NotifPanel({ notifications, onClose }) {
   );
 }
 
+// ─── AiBubble ─────────────────────────────────────────────────────────────────
+
 function AiBubble({ chatOpen, bubbleHint, onToggle }) {
   return (
     <div className="ec-bubble-wrap" style={{ position: "fixed", bottom: "30px", right: "30px", zIndex: 1000 }}>
@@ -207,14 +635,14 @@ function AiBubble({ chatOpen, bubbleHint, onToggle }) {
           background: "var(--ec-white)", color: "var(--ec-black)",
           border: "3px solid var(--ec-black)", boxShadow: "6px 6px 0px var(--ec-black)",
           padding: "12px 20px", fontWeight: "bold", whiteSpace: "nowrap",
-          fontSize: "14px", fontFamily: "Inter, sans-serif"
+          fontSize: "14px", fontFamily: "Inter, sans-serif",
         }}>
           Hei, prima oară la EC? 👋
           <div style={{
             position: "absolute", bottom: "-8px", right: "26px",
             width: "12px", height: "12px", background: "var(--ec-white)",
             borderBottom: "3px solid var(--ec-black)", borderRight: "3px solid var(--ec-black)",
-            transform: "rotate(45deg)"
+            transform: "rotate(45deg)",
           }}/>
         </div>
       )}
@@ -245,6 +673,8 @@ function AiBubble({ chatOpen, bubbleHint, onToggle }) {
   );
 }
 
+// ─── ChatWindow ───────────────────────────────────────────────────────────────
+
 function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown, onChip, messagesEndRef }) {
   return (
     <div className="ec-chat">
@@ -271,7 +701,6 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
             />
           </div>
         ))}
-
         {typing && (
           <div className="ec-chat__msg-row ec-chat__msg-row--ai">
             <div className="ec-chat__msg-avatar" style={{ background: "var(--ec-black)", boxShadow: "none" }}>🏰</div>
@@ -319,9 +748,7 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
   );
 }
 
-/* ─────────────────────────────────────────
-   Main App
-───────────────────────────────────────── */
+// ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [chatOpen, setChatOpen]           = useState(false);
@@ -332,9 +759,12 @@ export default function App() {
   const [unread, setUnread]               = useState(2);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [messages, setMessages]           = useState([
-    { role: "ai", text: "Hei! 👋 Sunt asistentul tău EC. Prima dată la festival? Spune-mi cu ce te pot ajuta – transport, cazare, buget, muzică sau orice altceva!" }
+    { role: "ai", text: "Hei! 👋 Sunt asistentul tău EC. Prima dată la festival? Spune-mi cu ce te pot ajuta – transport, cazare, buget, muzică sau orice altceva!" },
   ]);
-  const messagesEndRef = useRef(null);
+  const [showAuth, setShowAuth]   = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [loggedIn, setLoggedIn]   = useState(!!getToken());
+  const messagesEndRef            = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -351,7 +781,6 @@ export default function App() {
     setInput("");
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
     setTyping(true);
-
     try {
       // Asigură-te că avem token înainte de primul mesaj
       const authed = await ensureAuth();
@@ -398,26 +827,40 @@ export default function App() {
     setNotifOpen(false);
   }
 
+  function handleAuthClick() {
+    if (loggedIn) {
+      logout();
+      setLoggedIn(false);
+      setShowAdmin(false);
+    } else {
+      setShowAuth(true);
+    }
+  }
+
+  function handleAuthSuccess() {
+    setLoggedIn(true);
+    setShowAuth(false);
+  }
+
   return (
     <div>
-      <NavBar unread={unread} onBellClick={handleBell}>
+      <NavBar
+        unread={unread}
+        onBellClick={handleBell}
+        onAuthClick={handleAuthClick}
+        onAdminClick={() => setShowAdmin(true)}
+        loggedIn={loggedIn}
+      >
         {notifOpen && (
-          <NotifPanel
-            notifications={notifications}
-            onClose={() => setNotifOpen(false)}
-          />
+          <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)}/>
         )}
       </NavBar>
 
-      <Hero />
+      <Hero/>
       <InfoSection/>
       <LineupSection/>
 
-      <AiBubble
-        chatOpen={chatOpen}
-        bubbleHint={bubbleHint}
-        onToggle={handleBubble}
-      />
+      <AiBubble chatOpen={chatOpen} bubbleHint={bubbleHint} onToggle={handleBubble}/>
 
       {chatOpen && (
         <ChatWindow
@@ -430,6 +873,14 @@ export default function App() {
           onChip={sendMessage}
           messagesEndRef={messagesEndRef}
         />
+      )}
+
+      {showAuth && (
+        <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess}/>
+      )}
+
+      {showAdmin && (
+        <AdminPanel onClose={() => setShowAdmin(false)}/>
       )}
     </div>
   );

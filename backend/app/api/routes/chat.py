@@ -13,7 +13,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("/message", response_model=MessageResponse)
 async def send_message(body: MessageRequest, user=Depends(get_current_user)):
-    await save_message(body.session_id, "user", body.message)
+    await save_message(body.session_id, "user", body.message, user_email=user)
     response, answered = await get_agent_response(body.message, body.session_id)
     await save_message(body.session_id, "assistant", response, answered)
     if not answered:
@@ -27,7 +27,7 @@ async def send_message(body: MessageRequest, user=Depends(get_current_user)):
 
 @router.post("/stream")
 async def stream_message(body: MessageRequest, user=Depends(get_current_user)):
-    await save_message(body.session_id, "user", body.message)
+    await save_message(body.session_id, "user", body.message, user_email=user)
 
     tokens: list[str] = []
     low_confidence = False

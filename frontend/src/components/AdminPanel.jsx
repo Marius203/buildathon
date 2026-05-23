@@ -34,6 +34,7 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
         body: JSON.stringify({
           session_id: item.session_id,
           message_content: item.message?.content,
+          user_email: item.user_email || null,
           reply,
         }),
       });

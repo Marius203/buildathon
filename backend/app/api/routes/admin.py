@@ -127,18 +127,21 @@ async def get_unanswered(user=Depends(get_current_admin)):
     pipeline = [
         {"$unwind": "$messages"},
         {"$match": {"messages.role": "user", "messages.answered": False}},
-        {"$project": {"session_id": 1, "message": "$messages", "_id": 0}},
+        {"$project": {"session_id": 1, "message": "$messages", "user_email": 1, "_id": 0}},
         {"$sort": {"message.timestamp": -1}},
         {"$limit": 50}
     ]
     results = await db.conversations.aggregate(pipeline).to_list(50)
+    
     return {"unanswered": results}
 
+
 @router.post("/unanswered/reply")
-async def reply_to_unanswered(body: dict, user=Depends(get_current_admin)):
+async def reply_to_unanswered(body: dict, admin=Depends(get_current_admin)):
     db = get_db()
     session_id = body.get("session_id")
     message_content = body.get("message_content")
+    user_email = body.get("user_email")
     reply = body.get("reply", "").strip()
 
     if not session_id or not reply or not message_content:
@@ -164,24 +167,50 @@ async def reply_to_unanswered(body: dict, user=Depends(get_current_admin)):
         {"session_id": session_id},
         {"$set": {f"messages.{target_index}.answered": True}}
     )
-
     admin_message = {
         "role": "assistant",
         "content": reply,
         "timestamp": datetime.datetime.utcnow(),
         "feedback": None,
         "answered": True,
-        "from_admin": True
+        "from_admin": True,
     }
     await db.conversations.update_one(
         {"session_id": session_id},
-        {
-            "$push": {"messages": admin_message},
-            "$set": {"updated_at": datetime.datetime.utcnow()}
-        }
+        {"$push": {"messages": admin_message}, "$set": {"updated_at": datetime.datetime.utcnow()}}
     )
+
+    if user_email:
+        await db.notifications.insert_one({
+            "user_email": user_email,
+            "question": message_content,
+            "answer": reply,
+            "read": False,
+            "created_at": datetime.datetime.utcnow(),
+        })
+
     return {"message": "Raspuns salvat cu succes"}
 
+
+@router.get("/notifications")
+async def get_notifications(user=Depends(get_current_user)):
+    db = get_db()
+    cursor = db.notifications.find({"user_email": user}).sort("created_at", -1).limit(20)
+    notifs = []
+    async for n in cursor:
+        n["_id"] = str(n["_id"])
+        notifs.append(n)
+    return {"notifications": notifs}
+
+
+@router.patch("/notifications/{notif_id}/read")
+async def mark_notification_read(notif_id: str, user=Depends(get_current_user)):
+    db = get_db()
+    await db.notifications.update_one(
+        {"_id": ObjectId(notif_id), "user_email": user},
+        {"$set": {"read": True}}
+    )
+    return {"message": "Marked as read"}
 
 @router.get("/stats/export")
 async def export_stats(user=Depends(get_current_admin)):

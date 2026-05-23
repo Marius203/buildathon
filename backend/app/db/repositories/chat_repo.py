@@ -1,7 +1,7 @@
 from datetime import datetime
 from app.db.mongodb import get_db
 
-async def save_message(session_id: str, role: str, content: str, answered: bool = True):
+async def save_message(session_id: str, role: str, content: str, answered: bool = True, user_email: str = None):
     db = get_db()
     message = {
         "role": role,
@@ -16,7 +16,7 @@ async def save_message(session_id: str, role: str, content: str, answered: bool 
         {
             "$push": {"messages": message},
             "$set": {"updated_at": datetime.utcnow()},
-            "$setOnInsert": {"session_id": session_id, "created_at": datetime.utcnow()}
+            "$setOnInsert": {"session_id": session_id, "created_at": datetime.utcnow(), "user_email": user_email}
         },
         upsert=True
     )

@@ -5,25 +5,6 @@ import bubbleLogo from "../images/logo.jpg";
 const CHIPS = ["🚌 Transport", "🏕️ Cazare", "💰 Buget", "🌧️ Vreme"];
 
 function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown, onChip, messagesEndRef, onFeedback }) {
-  const [copied, setCopied] = useState(false);
-
-  function handleCopy() {
-    const text = messages
-      .filter(m => m.text)
-      .map(m => {
-        const label = m.role === "user" ? "✋ Tu" : "🏰 EC";
-        const clean = m.text.replace(/<[^>]*>/g, "").replace(/\*\*(.*?)\*\*/g, "*$1*");
-        return `${label}:\n${clean}`;
-      })
-      .join("\n\n");
-
-    const full = `🏰 *EC Assistant*\n${"─".repeat(20)}\n\n${text}`;
-    navigator.clipboard.writeText(full).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
   return (
     <div className="ec-chat">
       <div className="ec-chat__header">
@@ -35,14 +16,6 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
             Online acum
           </div>
         </div>
-        <button className="ec-chat__copy-btn" onClick={handleCopy} title="Copiază conversația">
-          {copied ? "✓" : (
-            <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <rect x="9" y="9" width="13" height="13" rx="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          )}
-        </button>
       </div>
 
       <div className="ec-chat__messages">
@@ -110,7 +83,7 @@ function ChatWindow({ messages, typing, input, onInputChange, onSend, onKeyDown,
   );
 }
 
-export default function ChatBubble({ chatOpen, onToggle, messages, typing, input, onInputChange, onSend, onKeyDown, onChip, messagesEndRef, onFeedback }) {
+export default function ChatBubble({ chatOpen, onToggle, messages, typing, input, onInputChange, onSend, onKeyDown, onChip, messagesEndRef, onFeedback, badge }) {
   const [bubbleHint, setBubbleHint] = useState(true);
 
   useEffect(() => {
@@ -141,6 +114,14 @@ export default function ChatBubble({ chatOpen, onToggle, messages, typing, input
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
+        )}
+        {badge && !chatOpen && (
+          <div style={{
+            position: "absolute", top: "2px", right: "2px",
+            width: "14px", height: "14px", borderRadius: "50%",
+            background: "var(--ec-yellow)", border: "2px solid var(--ec-black)",
+            animation: "pulse 1.5s ease-in-out infinite",
+          }}/>
         )}
       </button>
 

@@ -41,37 +41,50 @@ export default function App() {
   const msgIndexRef               = useRef(0);
   const pollRef                   = useRef(null);
 
-  // Polling pentru raspunsuri de la admin (la fiecare 8s)
+  // Polling notificari de la admin (la fiecare 10s)
   useEffect(() => {
-    async function checkForAdminReplies() {
+    async function checkNotifications() {
       if (!getToken()) return;
       try {
-        const res = await fetch(`${API_URL}/chat/history/${getSessionId()}`, {
+        const res = await fetch(`${API_URL}/admin/notifications`, {
           headers: { authorization: `Bearer ${getToken()}` },
         });
         if (!res.ok) return;
         const data = await res.json();
-        const dbMessages = data.messages || [];
-        const adminReplies = dbMessages.filter(m => m.from_admin && m.role === "assistant");
-        if (adminReplies.length === 0) return;
-        setMessages(prev => {
-          const existingTexts = new Set(prev.map(m => m.text));
-          const newReplies = adminReplies.filter(m => !existingTexts.has("👤 " + m.content));
-          if (newReplies.length === 0) return prev;
-          return [
-            ...prev,
-            ...newReplies.map(m => ({
-              role: "ai",
-              text: "👤 " + m.content,
-              index: undefined,
-              feedback: null,
-            })),
-          ];
+        const unread = (data.notifications || []).filter(n => !n.read);
+        if (unread.length === 0) return;
+
+        // Adauga in panoul de notificari
+        setNotifications(prev => {
+          const existingIds = new Set(prev.map(n => n.id));
+          const newNotifs = unread
+            .filter(n => !existingIds.has(n._id))
+            .map(n => ({
+              id: n._id,
+              text: `💬 Răspuns la întrebarea ta: "${n.question.slice(0, 40)}..."`,
+              answer: n.answer,
+              question: n.question,
+              time: "acum",
+              read: false,
+              fromAdmin: true,
+            }));
+          if (newNotifs.length === 0) return prev;
+          setUnread(u => u + newNotifs.length);
+          return [...newNotifs, ...prev];
         });
+
+        // Marcheaza ca citite in DB
+        for (const n of unread) {
+          fetch(`${API_URL}/admin/notifications/${n._id}/read`, {
+            method: "PATCH",
+            headers: { authorization: `Bearer ${getToken()}` },
+          }).catch(() => {});
+        }
       } catch (e) {}
     }
 
-    pollRef.current = setInterval(checkForAdminReplies, 8000);
+    pollRef.current = setInterval(checkNotifications, 10000);
+    checkNotifications(); // run imediat la mount
     return () => clearInterval(pollRef.current);
   }, [loggedIn]);
 

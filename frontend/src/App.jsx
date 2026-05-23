@@ -84,13 +84,7 @@ export default function App() {
           return [...newNotifs, ...prev];
         });
 
-        // Marcheaza ca citite in DB
-        for (const n of unread) {
-          fetch(`${API_URL}/admin/notifications/${n._id}/read`, {
-            method: "PATCH",
-            headers: { authorization: `Bearer ${getToken()}` },
-          }).catch(() => {});
-        }
+
       } catch (e) {}
     }
 
@@ -175,11 +169,20 @@ export default function App() {
   }
 
   function handleBell() {
+    const opening = !notifOpen;
     setNotifOpen(prev => !prev);
     setChatOpen(false);
-    if (!notifOpen) {
+    if (opening) {
       setUnread(0);
       setNotifications(n => n.map(x => ({ ...x, read: true })));
+      // Marcheaza ca citite in DB doar cand userul deschide panoul
+      const unreadNotifs = notifications.filter(n => !n.read && n.id && typeof n.id === "string");
+      for (const n of unreadNotifs) {
+        fetch(`${API_URL}/admin/notifications/${n.id}/read`, {
+          method: "PATCH",
+          headers: { authorization: `Bearer ${getToken()}` },
+        }).catch(() => {});
+      }
     }
   }
 

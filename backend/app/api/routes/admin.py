@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.db.mongodb import get_db
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_admin
 from app.services.kb_service import process_document, process_image
 import csv
 import io
@@ -10,7 +10,7 @@ import datetime
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/stats")
-async def get_stats(user=Depends(get_current_user)):
+async def get_stats(user=Depends(get_current_admin)):
     db = get_db()
     total_messages = await db.messages.count_documents({"role": "user"})
     total_conversations = len(await db.messages.distinct("session_id"))
@@ -31,7 +31,7 @@ async def get_stats(user=Depends(get_current_user)):
     }
 
 @router.get("/unanswered")
-async def get_unanswered(user=Depends(get_current_user)):
+async def get_unanswered(user=Depends(get_current_admin)):
     db = get_db()
     cursor = db.messages.find({"role": "assistant", "answered": False}).sort("timestamp", -1).limit(50)
     messages = []
@@ -41,7 +41,7 @@ async def get_unanswered(user=Depends(get_current_user)):
     return {"unanswered": messages}
 
 @router.get("/stats/export")
-async def export_stats(user=Depends(get_current_user)):
+async def export_stats(user=Depends(get_current_admin)):
     db = get_db()
     cursor = db.messages.find({"role": "user"}).sort("timestamp", -1)
     output = io.StringIO()
@@ -57,7 +57,7 @@ async def export_stats(user=Depends(get_current_user)):
     )
 
 @router.post("/kb/upload")
-async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):
+async def upload_file(file: UploadFile = File(...), user=Depends(get_current_admin)):
     content = await file.read()
     file_type = file.content_type
     filename = file.filename

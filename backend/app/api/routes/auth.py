@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.user import RegisterRequest, LoginRequest, TokenResponse
 from app.db.repositories.user_repo import get_user_by_email, create_user
 from app.core.security import hash_password, verify_password, create_access_token
+from app.db.mongodb import get_db
+from app.api.dependencies import get_current_admin
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,3 +23,14 @@ async def login(body: LoginRequest):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_access_token({"sub": user["email"]})
     return TokenResponse(access_token=token)
+
+@router.post("/make-admin/{email}")
+async def make_admin(email: str, user=Depends(get_current_admin)):
+    db = get_db()
+    result = await db.users.update_one(
+        {"email": email},
+        {"$set": {"is_admin": True}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": f"{email} is now admin"}

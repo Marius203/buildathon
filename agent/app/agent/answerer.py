@@ -7,13 +7,18 @@ from __future__ import annotations
 
 from typing import Any
 
+from collections.abc import AsyncIterator, Iterator
+
 from app.agent.prompts import format_context, no_context_prompt, system_prompt
-from app.llm.ollama_client import OLLAMA_MAIN_MODEL, chat
+from app.llm.ollama_client import OLLAMA_SMALL_MODEL, chat, chat_stream, chat_stream_async
 from app.tools.search_kb import DEFAULT_K, has_strong_match, search_kb
 
-# Use the big model: 14b is far better at Romanian fluency and at following
-# the few-shot anti-hallucination rules in the system prompt.
-ANSWERER_MODEL = OLLAMA_MAIN_MODEL
+# 3B fits fully on the 6GB GPU, so generation is much faster than 14B-on-CPU.
+# Tradeoff: weaker at Romanian fluency and at following the few-shot
+# anti-hallucination rules — keep an eye on refusal quality.
+ANSWERER_MODEL = OLLAMA_SMALL_MODEL
+
+LLM_OPTIONS = {"temperature": 0.2}
 
 
 def answer(
@@ -32,7 +37,7 @@ def answer(
                 {"role": "user", "content": query},
             ],
             model=ANSWERER_MODEL,
-            options={"temperature": 0.2},
+            options=LLM_OPTIONS,
         )
         return {
             "query": query,
@@ -51,7 +56,7 @@ def answer(
             {"role": "user", "content": query},
         ],
         model=ANSWERER_MODEL,
-        options={"temperature": 0.2},
+        options=LLM_OPTIONS,
     )
     text = msg.get("content", "").strip()
     return {
@@ -72,3 +77,99 @@ def answer(
         ],
         "low_confidence": False,
     }
+
+
+def answer_stream(
+    query: str,
+    lang: str = "en",
+    topic: str | None = None,
+    k: int = DEFAULT_K,
+) -> Iterator[dict[str, Any]]:
+    """Yield {"token": str} dicts while generating, then a final {"done": True, ...} dict."""
+    chunks = search_kb(query, lang=lang, topic=topic, k=k)
+
+    if not chunks or not has_strong_match(chunks):
+        for token in chat_stream(
+            messages=[
+                {"role": "system", "content": no_context_prompt(lang)},
+                {"role": "user", "content": query},
+            ],
+            model=ANSWERER_MODEL,
+            options=LLM_OPTIONS,
+        ):
+            yield {"token": token}
+        yield {"done": True, "sources": [], "low_confidence": True}
+        return
+
+    context = format_context(chunks)
+    sys = system_prompt(lang, context)
+    for token in chat_stream(
+        messages=[
+            {"role": "system", "content": sys},
+            {"role": "user", "content": query},
+        ],
+        model=ANSWERER_MODEL,
+        options=LLM_OPTIONS,
+    ):
+        yield {"token": token}
+
+    sources = [
+        {
+            "id": c["id"],
+            "section": c.get("section"),
+            "section_title": c.get("section_title"),
+            "topic": c.get("topic"),
+            "score": c.get("score"),
+            "vector_distance": c.get("vector_distance"),
+        }
+        for c in chunks
+    ]
+    yield {"done": True, "sources": sources, "low_confidence": False}
+
+
+async def answer_stream_async(
+    query: str,
+    lang: str = "en",
+    topic: str | None = None,
+    k: int = DEFAULT_K,
+) -> AsyncIterator[dict[str, Any]]:
+    """Async version — keeps the event loop free while Ollama streams tokens."""
+    chunks = search_kb(query, lang=lang, topic=topic, k=k)
+
+    if not chunks or not has_strong_match(chunks):
+        async for token in chat_stream_async(
+            messages=[
+                {"role": "system", "content": no_context_prompt(lang)},
+                {"role": "user", "content": query},
+            ],
+            model=ANSWERER_MODEL,
+            options=LLM_OPTIONS,
+        ):
+            yield {"token": token}
+        yield {"done": True, "sources": [], "low_confidence": True}
+        return
+
+    context = format_context(chunks)
+    sys_msg = system_prompt(lang, context)
+    async for token in chat_stream_async(
+        messages=[
+            {"role": "system", "content": sys_msg},
+            {"role": "user", "content": query},
+        ],
+        model=ANSWERER_MODEL,
+        options=LLM_OPTIONS,
+    ):
+        yield {"token": token}
+
+    sources = [
+        {
+            "id": c["id"],
+            "section": c.get("section"),
+            "section_title": c.get("section_title"),
+            "topic": c.get("topic"),
+            "score": c.get("score"),
+            "vector_distance": c.get("vector_distance"),
+        }
+        for c in chunks
+    ]
+    yield {"done": True, "sources": sources, "low_confidence": False}

@@ -403,6 +403,14 @@ body {
   border: 1.5px solid var(--ec-black);
   color: var(--ec-black);
 }
+.ec-chat__bubble--ai a {
+  color: var(--ec-red);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ec-chat__bubble--ai a:hover {
+  opacity: 0.8;
+}
 .ec-chat__bubble--user {
   background: var(--ec-red);
   color: var(--ec-white);

@@ -54,7 +54,7 @@ def chat(
 
     response = _get_client().messages.create(
         model=model or CLAUDE_MODEL,
-        max_tokens=1024,
+        max_tokens=2048,
         system=system,
         messages=user_messages,
         temperature=temperature,
@@ -75,7 +75,7 @@ def chat_stream(
 
     with _get_client().messages.stream(
         model=model or CLAUDE_MODEL,
-        max_tokens=1024,
+        max_tokens=2048,
         system=system,
         messages=user_messages,
         temperature=temperature,
@@ -96,7 +96,7 @@ async def chat_stream_async(
 
     async with _get_async_client().messages.stream(
         model=model or CLAUDE_MODEL,
-        max_tokens=1024,
+        max_tokens=2048,
         system=system,
         messages=user_messages,
         temperature=temperature,

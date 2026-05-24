@@ -129,11 +129,89 @@ async def get_unanswered(user=Depends(get_current_admin)):
         {"$match": {"messages.role": "user", "messages.answered": False}},
         {"$project": {"session_id": 1, "message": "$messages", "user_email": 1, "_id": 0}},
         {"$sort": {"message.timestamp": -1}},
-        {"$limit": 50}
+        {"$limit": 200}
     ]
-    results = await db.conversations.aggregate(pipeline).to_list(50)
-    
-    return {"unanswered": results}
+    results = await db.conversations.aggregate(pipeline).to_list(200)
+
+    groups = {}
+    for item in results:
+        key = (item.get("message", {}).get("content") or "").strip().lower()
+        if not key:
+            continue
+        if key not in groups:
+            groups[key] = {
+                "content": item["message"]["content"],
+                "count": 0,
+                "sessions": [],
+                "latest_timestamp": None,
+            }
+        groups[key]["count"] += 1
+        groups[key]["sessions"].append({
+            "session_id": item.get("session_id"),
+            "user_email": item.get("user_email"),
+        })
+        ts = item.get("message", {}).get("timestamp")
+        if ts and (groups[key]["latest_timestamp"] is None or ts > groups[key]["latest_timestamp"]):
+            groups[key]["latest_timestamp"] = ts
+
+    grouped = sorted(groups.values(), key=lambda x: (-x["count"], -(x["latest_timestamp"].timestamp() if x["latest_timestamp"] else 0)))
+    return {"unanswered": grouped[:50]}
+
+
+@router.post("/unanswered/reply")
+async def reply_to_unanswered(body: dict, admin=Depends(get_current_admin)):
+    db = get_db()
+    message_content = body.get("message_content", "").strip()
+    reply = body.get("reply", "").strip()
+    sessions = body.get("sessions", [])
+
+    if not reply or not message_content or not sessions:
+        raise HTTPException(status_code=400, detail="message_content, reply si sessions sunt obligatorii")
+
+    now = datetime.datetime.utcnow()
+    replied_to = 0
+    notif_docs = []
+
+    for s in sessions:
+        session_id = s.get("session_id")
+        user_email = s.get("user_email")
+        if not session_id:
+            continue
+        conv = await db.conversations.find_one({"session_id": session_id}, {"messages": 1})
+        if not conv:
+            continue
+        messages = conv.get("messages", [])
+        target_index = None
+        for i, msg in enumerate(messages):
+            if (msg.get("role") == "user"
+                    and msg.get("answered") == False
+                    and msg.get("content", "").strip().lower() == message_content.lower()):
+                target_index = i
+                break
+        if target_index is None:
+            continue
+        await db.conversations.update_one(
+            {"session_id": session_id},
+            {"$set": {f"messages.{target_index}.answered": True}}
+        )
+        await db.conversations.update_one(
+            {"session_id": session_id},
+            {"$push": {"messages": {
+                "role": "assistant", "content": reply, "timestamp": now,
+                "feedback": None, "answered": True, "from_admin": True,
+            }}, "$set": {"updated_at": now}}
+        )
+        replied_to += 1
+        if user_email:
+            notif_docs.append({
+                "user_email": user_email, "question": message_content,
+                "answer": reply, "read": False, "created_at": now,
+            })
+
+    if notif_docs:
+        await db.notifications.insert_many(notif_docs)
+
+    return {"message": f"Raspuns trimis la {replied_to} conversatii"}
 
 
 @router.post("/unanswered/reply")

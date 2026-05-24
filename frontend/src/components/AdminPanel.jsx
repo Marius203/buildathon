@@ -21,8 +21,8 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
   const [sent, setSent]           = useState({});
   const [errors, setErrors]       = useState({});
 
-  async function handleReply(item) {
-    const key = item.session_id + item.message?.content;
+  async function handleReply(group) {
+    const key = group.content;
     const reply = (replyText[key] || "").trim();
     if (!reply) return;
     setSending(s => ({ ...s, [key]: true }));
@@ -33,10 +33,9 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          session_id: item.session_id,
-          message_content: item.message?.content,
-          user_email: item.user_email || null,
+          message_content: group.content,
           reply,
+          sessions: group.sessions,
         }),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -54,7 +53,7 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <p style={{ fontSize: "14px", color: "#555", margin: 0 }}>
-          Mesaje la care agentul nu a știut să răspundă. Poți răspunde manual.
+          Întrebări grupate după conținut. Răspunsul merge la toți userii care au pus aceeași întrebare.
         </p>
         <button onClick={onRefresh} style={{ background: "var(--ec-black)", color: "#fff", border: "none", padding: "6px 14px", fontFamily: "Oswald, sans-serif", fontSize: "13px", fontWeight: "bold", cursor: "pointer" }}>
           🔄 REFRESH
@@ -70,56 +69,72 @@ function UnansweredTab({ unanswered, unansweredLoad, cardStyle, onRefresh }) {
         </div>
       )}
 
-      {unanswered.map((item, i) => {
-        const key = item.session_id + item.message?.content;
+      {unanswered.map((group, i) => {
+        const key = group.content;
         return (
-          <div key={i} style={{ ...cardStyle, borderLeft: "4px solid var(--ec-red)", display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div style={{ fontSize: "12px", color: "#888" }}>
-              Session: <code style={{ background: "#f0f0f0", padding: "2px 6px" }}>{item.session_id?.slice(-8)}</code>
-              <span style={{ marginLeft: "12px" }}>
-                {item.message?.timestamp ? new Date(item.message.timestamp).toLocaleString("ro-RO") : ""}
-              </span>
+          <div key={i} style={{ ...cardStyle, borderLeft: `4px solid ${group.count > 1 ? "#f59e0b" : "var(--ec-red)"}`, display: "flex", flexDirection: "column", gap: "12px" }}>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: "12px", color: "#888" }}>
+                {group.latest_timestamp ? new Date(group.latest_timestamp).toLocaleString("ro-RO") : ""}
+              </div>
+              {group.count > 1 && (
+                <div style={{ background: "#f59e0b", color: "#fff", fontFamily: "Oswald, sans-serif", fontWeight: "bold", fontSize: "13px", padding: "3px 10px", letterSpacing: "0.5px" }}>
+                  ✕{group.count} USERI AU ÎNTREBAT ASTA
+                </div>
+              )}
             </div>
 
-            <div style={{ background: "#fff8f8", border: "1px solid #fecaca", padding: "10px 14px", borderRadius: "2px" }}>
-              <span style={{ fontSize: "11px", fontWeight: "bold", color: "#dc2626", letterSpacing: "0.05em", textTransform: "uppercase" }}>Întrebarea utilizatorului</span>
+            <div style={{ background: "#fff8f8", border: "1px solid #fecaca", padding: "10px 14px" }}>
+              <span style={{ fontSize: "11px", fontWeight: "bold", color: "#dc2626", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                Întrebarea {group.count > 1 ? `(${group.count} useri)` : ""}
+              </span>
               <p style={{ fontSize: "14px", color: "var(--ec-black)", margin: "4px 0 0", fontWeight: "500" }}>
-                {item.message?.content || "—"}
+                {group.content}
               </p>
             </div>
 
+            {group.count > 1 && (
+              <div style={{ fontSize: "11px", color: "#888", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                <span style={{ fontWeight: "bold", marginRight: 4 }}>Sesiuni:</span>
+                {group.sessions.slice(0, 5).map((s, j) => (
+                  <code key={j} style={{ background: "#f0f0f0", padding: "1px 5px" }}>{s.session_id?.slice(-6)}</code>
+                ))}
+                {group.sessions.length > 5 && <span>+{group.sessions.length - 5} altele</span>}
+              </div>
+            )}
+
             {sent[key] ? (
               <div style={{ background: "#f0fff4", border: "1px solid #86efac", padding: "10px 14px", color: "#166534", fontWeight: "bold", fontSize: "13px" }}>
-                ✅ Răspuns trimis!
+                ✅ Răspuns trimis la {group.count} {group.count === 1 ? "user" : "useri"}!
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <span style={{ fontSize: "11px", fontWeight: "bold", color: "#555", letterSpacing: "0.05em", textTransform: "uppercase" }}>Răspunsul tău</span>
+                <span style={{ fontSize: "11px", fontWeight: "bold", color: "#555", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  Răspunsul tău {group.count > 1 ? `→ va fi trimis la ${group.count} useri` : ""}
+                </span>
                 <textarea
                   rows={3}
                   value={replyText[key] || ""}
                   onChange={e => setReplyText(t => ({ ...t, [key]: e.target.value }))}
-                  placeholder="Scrie un răspuns clar și util pentru utilizator..."
+                  placeholder="Scrie un răspuns clar și util..."
                   style={{ width: "100%", padding: "10px 12px", border: "2px solid var(--ec-black)", fontSize: "13px", fontFamily: "Inter, sans-serif", resize: "vertical", outline: "none", boxSizing: "border-box" }}
                 />
                 {errors[key] && <span style={{ fontSize: "12px", color: "var(--ec-red)", fontWeight: "bold" }}>{errors[key]}</span>}
                 <button
-                  onClick={() => handleReply(item)}
+                  onClick={() => handleReply(group)}
                   disabled={sending[key] || !(replyText[key] || "").trim()}
                   style={{
                     alignSelf: "flex-end",
                     background: sending[key] || !(replyText[key] || "").trim() ? "#ccc" : "var(--ec-black)",
-                    color: "#fff",
-                    border: "2px solid var(--ec-black)",
-                    padding: "8px 20px",
-                    fontFamily: "Oswald, sans-serif",
-                    fontSize: "14px",
-                    fontWeight: "bold",
+                    color: "#fff", border: "2px solid var(--ec-black)",
+                    padding: "8px 20px", fontFamily: "Oswald, sans-serif",
+                    fontSize: "14px", fontWeight: "bold",
                     cursor: sending[key] || !(replyText[key] || "").trim() ? "not-allowed" : "pointer",
                     letterSpacing: "0.5px",
                   }}
                 >
-                  {sending[key] ? "SE TRIMITE..." : "✉️ TRIMITE RĂSPUNS"}
+                  {sending[key] ? "SE TRIMITE..." : `✉️ TRIMITE LA ${group.count > 1 ? `TOȚI (${group.count})` : "USER"}`}
                 </button>
               </div>
             )}

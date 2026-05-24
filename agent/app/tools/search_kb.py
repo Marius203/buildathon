@@ -8,11 +8,11 @@ from app.embeddings.ollama import embed_one
 from app.lib.bm25_index import get_store
 from app.lib.rrf import fuse
 
-DEFAULT_K = 3
+DEFAULT_K = 10
 CANDIDATE_K = 20  # pull this many from each retriever before fusing
 # Cosine distance threshold above which we consider retrieval "weak" / out-of-domain.
 # bge-m3 typical good matches sit at 0.25–0.40; >0.55 means nothing in KB is close.
-LOW_CONFIDENCE_DISTANCE = 0.65
+LOW_CONFIDENCE_DISTANCE = 0.55
 
 
 def search_kb(

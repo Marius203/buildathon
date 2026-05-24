@@ -102,11 +102,17 @@ async def search(req: SearchRequest) -> SearchResponse:
     )
 
 
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
 class AnswerRequest(BaseModel):
     query: str = Field(min_length=1)
     lang: Literal["ro", "en"] = "en"
     topic: str | None = None
     k: int = Field(default=3, ge=1, le=20)
+    history: list[ChatMessage] = Field(default_factory=list)
 
 
 class AnswerSource(BaseModel):
@@ -129,8 +135,10 @@ class AnswerResponse(BaseModel):
 
 @app.post("/answer/stream")
 async def answer_stream(req: AnswerRequest) -> StreamingResponse:
+    history = [m.model_dump() for m in req.history]
+
     async def generate():
-        async for event in run_answer_stream(req.query, lang=req.lang, topic=req.topic, k=req.k):
+        async for event in run_answer_stream(req.query, lang=req.lang, topic=req.topic, k=req.k, history=history):
             yield json.dumps(event) + "\n"
 
     return StreamingResponse(generate(), media_type="application/x-ndjson")
@@ -156,7 +164,8 @@ async def ingest(body: dict) -> dict:
 
 @app.post("/answer", response_model=AnswerResponse)
 async def answer(req: AnswerRequest) -> AnswerResponse:
-    result = run_answer(req.query, lang=req.lang, topic=req.topic, k=req.k)
+    history = [m.model_dump() for m in req.history]
+    result = run_answer(req.query, lang=req.lang, topic=req.topic, k=req.k, history=history)
     return AnswerResponse(
         query=result["query"],
         lang=result["lang"],

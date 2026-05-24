@@ -34,7 +34,7 @@ async def stream_message(body: MessageRequest, user=Depends(get_current_user)):
 
     async def generate():
         nonlocal low_confidence
-        async for chunk in stream_agent_response(body.message):
+        async for chunk in stream_agent_response(body.message, body.session_id):
             yield chunk
             try:
                 data = json.loads(chunk.strip())

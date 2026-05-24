@@ -1,0 +1,27 @@
+# secrets
+.env
+**/.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# node (for the frontend later)
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# agent runtime state
+agent/data/chroma/
+*.bm25.pkl
+
+# os
+.DS_Store
+Thumbs.db

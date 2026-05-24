@@ -1,0 +1,309 @@
+/* ── GUIDE PAGE ADDITIONS ───────────────────────────────── */
+
+.guide-section-label {
+  font-family: var(--ec-font-display);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ec-gray);
+  margin-bottom: 12px;
+}
+
+/* ── WEATHER ─────────────────────────────────────────────── */
+
+.guide-weather-card {
+  border: 2px solid var(--ec-black);
+  background: var(--ec-white);
+  padding: 20px 24px;
+  margin-bottom: 4px;
+}
+
+.guide-weather-card--loading {
+  color: var(--ec-gray);
+  font-size: 0.85rem;
+  padding: 24px;
+  text-align: center;
+}
+
+.guide-weather-card--fallback {
+  border-color: #e5e7eb;
+  background: #fafafa;
+}
+
+.guide-weather-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.guide-weather-location {
+  font-family: var(--ec-font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ec-black);
+  letter-spacing: 0.02em;
+}
+
+.guide-weather-label {
+  font-size: 0.72rem;
+  color: var(--ec-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.guide-weather-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guide-weather-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.guide-weather-temp {
+  font-family: var(--ec-font-display);
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--ec-black);
+  line-height: 1;
+}
+
+.guide-weather-desc {
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.guide-weather-alert {
+  background: #fff8e1;
+  border-left: 3px solid #f59e0b;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 16px;
+}
+
+.guide-weather-forecast {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid #eee;
+  padding-top: 14px;
+  justify-content: space-between;
+}
+
+.guide-weather-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+}
+
+.guide-weather-dayname {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--ec-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.guide-weather-dayicon {
+  font-size: 1.2rem;
+}
+
+.guide-weather-dayhigh {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--ec-black);
+  font-family: var(--ec-font-display);
+}
+
+.guide-weather-rain {
+  font-size: 0.68rem;
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* ── TRANSPORT ───────────────────────────────────────────── */
+
+.guide-transport {
+  border: 2px solid var(--ec-black);
+  background: var(--ec-white);
+}
+
+.guide-transport-points {
+  display: flex;
+  border-bottom: 2px solid var(--ec-black);
+}
+
+.guide-transport-point {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 8px;
+  background: none;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.guide-transport-point:last-child {
+  border-right: none;
+}
+
+.guide-transport-point.active {
+  background: var(--ec-black);
+}
+
+.guide-transport-point.active .guide-transport-point-label,
+.guide-transport-point.active .guide-transport-point-type {
+  color: var(--ec-white);
+}
+
+.guide-transport-point:not(.active):hover {
+  background: #f5f5f5;
+}
+
+.guide-transport-point-icon {
+  font-size: 1.3rem;
+}
+
+.guide-transport-point-label {
+  font-family: var(--ec-font-display);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--ec-black);
+  letter-spacing: 0.02em;
+  text-align: center;
+  transition: color 0.15s;
+}
+
+.guide-transport-point-type {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ec-gray);
+  transition: color 0.15s;
+}
+
+.guide-transport-info {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.guide-transport-info-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.guide-transport-info-name {
+  font-family: var(--ec-font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--ec-black);
+}
+
+.guide-transport-info-desc {
+  font-size: 0.82rem;
+  color: #555;
+  margin-top: 2px;
+}
+
+.guide-transport-info-detail {
+  font-size: 0.78rem;
+  color: var(--ec-gray);
+  letter-spacing: 0.04em;
+}
+
+.guide-transport-schedule {
+  padding: 16px 20px;
+}
+
+.guide-transport-schedule-title {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--ec-gray);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.guide-transport-days {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.guide-transport-day-btn {
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--ec-font-display);
+  letter-spacing: 0.04em;
+  background: none;
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.15s;
+}
+
+.guide-transport-day-btn.active {
+  background: var(--ec-black);
+  border-color: var(--ec-black);
+  color: var(--ec-white);
+}
+
+.guide-transport-times {
+  margin-bottom: 14px;
+}
+
+.guide-transport-day-label {
+  font-size: 0.78rem;
+  color: #555;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.guide-transport-time-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.guide-transport-time-chip {
+  background: #f0f0f0;
+  border: 1.5px solid var(--ec-black);
+  padding: 5px 12px;
+  font-family: var(--ec-font-display);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--ec-black);
+  letter-spacing: 0.04em;
+}
+
+.guide-transport-link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ec-black);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  letter-spacing: 0.02em;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.guide-transport-link:hover {
+  opacity: 0.7;
+}

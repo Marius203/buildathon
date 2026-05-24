@@ -8,9 +8,9 @@ import AuthModal   from "./components/AuthModal";
 import AdminPanel  from "./components/AdminPanel";
 import ChatBubble  from "./components/ChatBubble";
 
-import HomePage  from "./pages/HomePage";
-import FaqPage   from "./pages/FaqPage";
-import GuidePage from "./pages/GuidePage";
+import HomePage    from "./pages/HomePage";
+import FaqPage     from "./pages/FaqPage";
+import GuidePage   from "./pages/GuidePage";
 import PlannerPage from "./pages/PlannerPage.jsx";
 
 import {
@@ -18,19 +18,69 @@ import {
   getSessionId, ensureAuth, authHeaders,
 } from "./utils";
 
-const INITIAL_NOTIFICATIONS = [
-  { id: 1, text: "🎵 Line-up complet anunțat! Verifică artiștii tăi favoriți", time: "acum 2 min", read: false },
-  { id: 2, text: "🚌 Shuttle-urile din Cluj sunt aproape sold out!",            time: "acum 1h",  read: false },
-  { id: 3, text: "⛺ Locuri de glamping disponibile – rezervă acum",            time: "acum 3h",  read: true  },
-];
+// ─── Notif Detail Modal ───────────────────────────────────────────────────────
+
+function NotifDetailModal({ notif, onClose }) {
+  if (!notif) return null;
+  const isAdmin = notif.fromAdmin;
+
+  return (
+    <div className="ec-notif-modal-backdrop" onClick={onClose}>
+      <div className="ec-notif-modal" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={`ec-notif-modal__header ${isAdmin ? "ec-notif-modal__header--admin" : "ec-notif-modal__header--broadcast"}`}>
+          <span className="ec-notif-modal__header-title">
+            {isAdmin ? "💬 RĂSPUNS DE LA ADMIN" : "📢 NOTIFICARE FESTIVAL"}
+          </span>
+          <button className="ec-notif-modal__close" onClick={onClose}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div className="ec-notif-modal__body">
+          {/* Original question (only for admin replies) */}
+          {isAdmin && notif.question && (
+            <div className="ec-notif-modal__question-box">
+              <div className="ec-notif-modal__question-label">Întrebarea ta</div>
+              <p className="ec-notif-modal__question-text">"{notif.question}"</p>
+            </div>
+          )}
+
+          {/* Answer */}
+          <div className={`ec-notif-modal__answer-box ${isAdmin ? "ec-notif-modal__answer-box--admin" : "ec-notif-modal__answer-box--broadcast"}`}>
+            {isAdmin && (
+              <div className={`ec-notif-modal__answer-label ec-notif-modal__answer-label--admin`}>
+                Răspuns
+              </div>
+            )}
+            <p className="ec-notif-modal__answer-text">
+              {notif.answer || notif.text?.replace(/^[📢💬]\s*/, "")}
+            </p>
+          </div>
+
+          {/* Footer */}
+          <div className="ec-notif-modal__footer">
+            <span className="ec-notif-modal__time">{notif.time}</span>
+            <button className="ec-notif-modal__cta" onClick={onClose}>
+              ÎNCHIDE
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
   const [chatOpen, setChatOpen]           = useState(false);
   const [notifOpen, setNotifOpen]         = useState(false);
   const [input, setInput]                 = useState("");
   const [typing, setTyping]               = useState(false);
-  const [unread, setUnread]               = useState(2);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [unread, setUnread]               = useState(0);
+  const [notifications, setNotifications] = useState([]);   // always starts empty
+  const [selectedNotif, setSelectedNotif] = useState(null);
   const [messages, setMessages]           = useState([
     { role: "ai", text: "Hei! 👋 Sunt asistentul tău EC. Prima dată la festival? Spune-mi cu ce te pot ajuta – transport, cazare, buget, muzică sau orice altceva!" },
   ]);
@@ -41,7 +91,7 @@ export default function App() {
   const msgIndexRef               = useRef(0);
   const pollRef                   = useRef(null);
 
-  // Polling notificari de la admin (la fiecare 10s)
+  // ── Poll notifications every 10s ──────────────────────────────────────────
   useEffect(() => {
     async function checkNotifications() {
       if (!getToken()) return;
@@ -51,45 +101,32 @@ export default function App() {
         });
         if (!res.ok) return;
         const data = await res.json();
-        const unread = (data.notifications || []).filter(n => !n.read);
-        if (unread.length === 0) return;
+        const incoming = (data.notifications || []).filter(n => !n.read);
+        if (incoming.length === 0) return;
 
-        // Adauga in panoul de notificari
         setNotifications(prev => {
           const existingIds = new Set(prev.map(n => n.id));
-          const newNotifs = unread
+          const newNotifs = incoming
             .filter(n => !existingIds.has(n._id))
-            .map(n => {
-              if (n.is_broadcast) {
-                return {
+            .map(n => n.is_broadcast
+              ? { id: n._id, text: `📢 ${n.broadcast_message}`, time: "acum", read: false, fromAdmin: false }
+              : {
                   id: n._id,
-                  text: `📢 ${n.broadcast_message}`,
-                  time: "acum",
-                  read: false,
-                  fromAdmin: false,
-                };
-              }
-              return {
-                id: n._id,
-                text: `💬 Răspuns la întrebarea ta: "${(n.question || "").slice(0, 40)}..."`,
-                answer: n.answer,
-                question: n.question,
-                time: "acum",
-                read: false,
-                fromAdmin: true,
-              };
-            });
+                  text: `💬 Răspuns la: "${(n.question || "").slice(0, 40)}..."`,
+                  answer: n.answer,
+                  question: n.question,
+                  time: "acum", read: false, fromAdmin: true,
+                }
+            );
           if (newNotifs.length === 0) return prev;
           setUnread(u => u + newNotifs.length);
           return [...newNotifs, ...prev];
         });
-
-
-      } catch (e) {}
+      } catch (_) {}
     }
 
     pollRef.current = setInterval(checkNotifications, 10000);
-    checkNotifications(); // run imediat la mount
+    checkNotifications();
     return () => clearInterval(pollRef.current);
   }, [loggedIn]);
 
@@ -97,6 +134,7 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
+  // ── Chat ──────────────────────────────────────────────────────────────────
   async function sendMessage(overrideText) {
     const userMsg = (overrideText !== undefined ? overrideText : input).trim();
     if (!userMsg) return;
@@ -128,11 +166,10 @@ export default function App() {
         buffer = lines.pop();
         for (const line of lines) {
           if (!line.trim()) continue;
-          // Suporta atat SSE ("data: {...}") cat si JSON pur ("{...}")
           const jsonStr = line.startsWith("data: ") ? line.slice(6) : line;
           if (jsonStr === "[DONE]") break;
           try {
-            const data = JSON.parse(jsonStr);
+            const data  = JSON.parse(jsonStr);
             const token = data.token ?? data.text ?? data.content ?? data.answer ?? "";
             if (token) {
               setMessages(prev => {
@@ -148,7 +185,6 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.error("Chat error:", err);
       setTyping(false);
       setMessages(prev => [...prev, { role: "ai", text: "❌ Eroare de conexiune. Verifică că backend-ul rulează." }]);
     }
@@ -161,7 +197,7 @@ export default function App() {
         body: JSON.stringify({ session_id: getSessionId(), message_index: messageIndex, helpful }),
       });
       setMessages(prev => prev.map(m => m.index === messageIndex ? { ...m, feedback: helpful } : m));
-    } catch (e) { console.error("Feedback error:", e); }
+    } catch (_) {}
   }
 
   function handleKey(e) {
@@ -175,7 +211,6 @@ export default function App() {
     if (opening) {
       setUnread(0);
       setNotifications(n => n.map(x => ({ ...x, read: true })));
-      // Marcheaza ca citite in DB doar cand userul deschide panoul
       const unreadNotifs = notifications.filter(n => !n.read && n.id && typeof n.id === "string");
       for (const n of unreadNotifs) {
         fetch(`${API_URL}/admin/notifications/${n.id}/read`, {
@@ -196,6 +231,18 @@ export default function App() {
     else setShowAuth(true);
   }
 
+  // Click notif → open full popup
+  function handleNotifClick(notif) {
+    setSelectedNotif(notif);
+    setNotifOpen(false);
+  }
+
+  // Funcția apelată când apeși pe un card din HomePage
+  function handleCardClick(topic) {
+    setChatOpen(true); // Deschide bula de chat
+    sendMessage(`Aș vrea să aflu mai multe detalii despre ${topic.toLowerCase()}.`); 
+  }
+
   return (
     <>
       <NavBar
@@ -206,15 +253,20 @@ export default function App() {
         loggedIn={loggedIn}
       >
         {notifOpen && (
-          <NotifPanel notifications={notifications} onClose={() => setNotifOpen(false)}/>
+          <NotifPanel
+            notifications={notifications}
+            onClose={() => setNotifOpen(false)}
+            onNotifClick={handleNotifClick}
+          />
         )}
       </NavBar>
 
       <main>
         <Routes>
-          <Route path="/"      element={<HomePage/>}/>
-          <Route path="/faq"   element={<FaqPage/>}/>
-          <Route path="/guide" element={<GuidePage/>}/>
+          {/* Aici am adăugat prop-ul onTopicClick={handleCardClick} */}
+          <Route path="/"        element={<HomePage onTopicClick={handleCardClick} />}/>
+          <Route path="/faq"     element={<FaqPage/>}/>
+          <Route path="/guide"   element={<GuidePage/>}/>
           <Route path="/planner" element={<PlannerPage/>}/>
         </Routes>
       </main>
@@ -232,6 +284,14 @@ export default function App() {
         messagesEndRef={messagesEndRef}
         onFeedback={handleFeedback}
       />
+
+      {/* Notif detail popup — centered on screen */}
+      {selectedNotif && (
+        <NotifDetailModal
+          notif={selectedNotif}
+          onClose={() => setSelectedNotif(null)}
+        />
+      )}
 
       {showAuth  && <AuthModal onClose={() => setShowAuth(false)} onSuccess={() => { setLoggedIn(true); setShowAuth(false); }}/>}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)}/>}

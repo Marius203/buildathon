@@ -60,28 +60,56 @@ const STEPS = [
   },
 ];
 
-function StepIndicator({ current, total }) {
+function StepIndicator({ current, total, answers, steps }) {
+  const pct = Math.round((current / total) * 100);
   return (
-    <div className="planner-steps">
-      {Array.from({ length: total }).map((_, i) => (
-        <div
-          key={i}
-          className={`planner-step-dot ${i < current ? "done" : ""} ${i === current ? "active" : ""}`}
-        />
-      ))}
-    </div>
+    <>
+      {Object.keys(answers).length > 0 && (
+        <div className="planner-summary">
+          {steps.slice(0, current).map((s, i) => {
+            const val = answers[s.id];
+            const opt = s.options.find(o => o.value === val);
+            if (!opt) return null;
+            return <span key={i} className="planner-summary__chip">{opt.label}</span>;
+          })}
+        </div>
+      )}
+      <div className="planner-progress">
+        <div className="planner-progress__labels">
+          <span className="planner-progress__step-label">Pasul {current + 1} din {total}</span>
+          <span className="planner-progress__total">{pct}% completat</span>
+        </div>
+        <div className="planner-progress__bar-wrap">
+          <div className="planner-progress__bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+      <div className="planner-dots">
+        {Array.from({ length: total }).map((_, i) => (
+          <div key={i} className={`planner-dot ${i < current ? "done" : ""} ${i === current ? "active" : ""}`} />
+        ))}
+      </div>
+    </>
   );
 }
 
 function OptionCard({ option, selected, onClick }) {
+  const parts = option.label.split(" ");
+  const first = parts[0] || "";
+  // simple emoji check: codepoint > 127
+  const isEmoji = first.length <= 4 && [...first].some(c => c.codePointAt(0) > 127);
+  const emoji = isEmoji ? first : null;
+  const labelText = isEmoji ? parts.slice(1).join(" ") : option.label;
   return (
     <button
       className={`planner-option ${selected ? "selected" : ""}`}
       onClick={() => onClick(option.value)}
     >
-      <span className="planner-option-label">{option.label}</span>
-      <span className="planner-option-desc">{option.desc}</span>
-      {selected && <span className="planner-option-check">✓</span>}
+      {emoji && <span className="planner-option__emoji">{emoji}</span>}
+      <span className="planner-option__text">
+        <span className="planner-option-label">{labelText}</span>
+        <span className="planner-option-desc">{option.desc}</span>
+      </span>
+      {selected && <span className="planner-option-check">&#10003;</span>}
     </button>
   );
 }
@@ -342,7 +370,7 @@ Fii specific, entuziast și util. Folosește informațiile reale despre EC 2025.
       </div>
 
       <div className="planner-card">
-        <StepIndicator current={step} total={totalSteps} />
+        <StepIndicator current={step} total={totalSteps} answers={answers} steps={STEPS} />
 
         <div className="planner-question-wrap">
           <p className="planner-step-label">Întrebarea {step + 1} din {totalSteps}</p>

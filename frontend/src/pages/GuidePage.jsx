@@ -85,6 +85,48 @@ const CASHLESS_STEPS = [
   { step: "05", icon: "💰", title: "Recuperezi restul", desc: "Rambursare online gratuită 30 zile după festival. On-site = 3% comision." },
 ];
 
+
+const FORBIDDEN_ITEMS = [
+  {
+    category: "🍺 Băuturi & Recipiente",
+    color: "#dc2626",
+    items: [
+      "Sticle de sticlă sau recipiente metalice cu margini ascuțite",
+      "Băuturi alcoolice aduse din afară",
+      "Recipiente > 0.5L (inclusiv termos metalic)",
+    ],
+  },
+  {
+    category: "🔫 Obiecte periculoase",
+    color: "#b45309",
+    items: [
+      "Arme de orice fel (inclusiv briceaguri, spray piper)",
+      "Artificii, torțe, fumigene",
+      "Lasere puternice",
+      "Drone fără acreditare media",
+    ],
+  },
+  {
+    category: "🐕 Animale & Altele",
+    color: "#7c3aed",
+    items: [
+      "Animale de companie (nu sunt permise în festival)",
+      "Generatoare personale",
+      "Umbrele cu vârf ascuțit",
+      "Corturi cu structuri metalice > 3m înălțime",
+    ],
+  },
+  {
+    category: "💊 Substanțe",
+    color: "#0f766e",
+    items: [
+      "Droguri de orice fel",
+      "Substanțe psihotrope",
+      "Medicamente fără prescripție (verifică la intrare)",
+    ],
+  },
+];
+
 // ── Weather ───────────────────────────────────────────────────────────────────
 
 function wmoToCondition(code) {
@@ -520,6 +562,80 @@ function VeteranTipsBlock() {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+
+function ForbiddenBlock() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ border: "2px solid var(--ec-black)", overflow: "hidden", marginBottom: 4 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 20px",
+          background: open ? "var(--ec-black)" : "#fff8f8",
+          border: "none", cursor: "pointer",
+          transition: "background 0.15s",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: "1.3rem" }}>🚫</span>
+          <span style={{
+            fontFamily: "var(--ec-font-display)", fontSize: "1rem",
+            fontWeight: 800, color: open ? "#fff" : "var(--ec-red)",
+            letterSpacing: "0.02em",
+          }}>
+            CE ESTE INTERZIS LA EC
+          </span>
+        </div>
+        <span style={{
+          fontSize: "0.85rem", fontWeight: 900,
+          color: open ? "#fff" : "var(--ec-black)",
+        }}>
+          {open ? "▲ ASCUNDE" : "▼ ARATĂ LISTA"}
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ padding: "20px", background: "#fff", display: "flex", flexDirection: "column", gap: 16 }}>
+          <p style={{ fontSize: "0.82rem", color: "#666", margin: 0 }}>
+            Obiectele de mai jos vor fi confiscate la intrare sau te pot face să fii refuzat.
+            Verifică lista înainte să împachetezi.
+          </p>
+
+          {FORBIDDEN_ITEMS.map((cat, i) => (
+            <div key={i} style={{ borderLeft: `4px solid ${cat.color}`, paddingLeft: 14 }}>
+              <div style={{
+                fontFamily: "var(--ec-font-display)", fontSize: "0.85rem",
+                fontWeight: 800, color: cat.color, letterSpacing: "0.04em",
+                marginBottom: 8,
+              }}>
+                {cat.category}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {cat.items.map((item, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: "0.85rem", color: "#333" }}>
+                    <span style={{ color: "#dc2626", fontWeight: "bold", flexShrink: 0, marginTop: 1 }}>✕</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div style={{
+            background: "#fff8e1", border: "1.5px solid #fcd34d",
+            padding: "12px 16px", fontSize: "0.82rem", color: "#92400e", lineHeight: 1.6,
+          }}>
+            ⚠️ <strong>Permis:</strong> alimente non-alcoolice, aparat foto fără obiectiv detașabil,
+            umbrele normale, medicamente cu prescripție (declarate la intrare).
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GuidePage() {
   return (
     <div>
@@ -556,6 +672,9 @@ export default function GuidePage() {
         <div style={{ ...LABEL_STYLE, marginTop: 32 }}>SIGURANȚĂ</div>
         <SafetyBlock />
 
+        <div style={{ ...LABEL_STYLE, marginTop: 32 }}>CHESTII INTERZISE</div>
+        <ForbiddenBlock />
+
         <div style={{ ...LABEL_STYLE, marginTop: 32 }}>HARTA SCENELOR</div>
         <StagesMap />
 
@@ -563,7 +682,7 @@ export default function GuidePage() {
         <VeteranTipsBlock />
 
         <div className="ec-faq-cta" style={{ marginTop: 40 }}>
-          <p>Mai ai întrebări? Asistentul AI din colțul dreapta-jos știe totul. 👇</p>
+          <p>Mai ai întrebări? Asistentul AI din colțul dreapta-jos știe totul.</p>
         </div>
       </div>
     </div>

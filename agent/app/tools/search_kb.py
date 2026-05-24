@@ -25,13 +25,14 @@ def search_kb(
         return []
 
     where: dict[str, Any] = {"lang": lang}
-    if topic:
-        where = {"$and": [{"lang": lang}, {"topic": topic}]}
 
     qvec = embed_one(query)
-    chroma = get_kb_collection().query(
+    coll = get_kb_collection()
+    if coll.count() == 0:
+        return []
+    chroma = coll.query(
         query_embeddings=[qvec],
-        n_results=CANDIDATE_K,
+        n_results=min(CANDIDATE_K, coll.count()),
         where=where,
     )
     vector_ids: list[str] = chroma["ids"][0]
@@ -48,10 +49,6 @@ def search_kb(
         bm_docs_by_id = dict(zip(idx.ids, idx.docs))
 
     bm_scores = store.score(query, lang)
-    if topic:
-        bm_scores = [
-            (cid, s) for cid, s in bm_scores if bm_meta_by_id.get(cid, {}).get("topic") == topic
-        ]
     bm_scores.sort(key=lambda kv: kv[1], reverse=True)
     bm_ids = [cid for cid, _ in bm_scores[:CANDIDATE_K]]
 
@@ -72,7 +69,6 @@ def search_kb(
                 round(vec_dist_by_id[cid], 4) if cid in vec_dist_by_id else None
             ),
             "text": docs_by_id.get(cid, ""),
-            "topic": meta_by_id.get(cid, {}).get("topic"),
             "section": meta_by_id.get(cid, {}).get("section"),
             "section_title": meta_by_id.get(cid, {}).get("section_title"),
             "source": meta_by_id.get(cid, {}).get("source"),

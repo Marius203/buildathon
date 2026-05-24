@@ -1,0 +1,1259 @@
+<!doctype html>
+<!--
+  EC FIRST-TIMER ASSISTANT — Pitch Deck
+  Team: [TEAM NAME] · 3 Builders
+  Submission: EC AI Builder Challenge 2026
+
+  Controls:
+    ← / →        prev / next slide
+    space        next slide
+    1 – 9        jump to slide
+    F            toggle 9-up overview
+    Esc          exit overview
+-->
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EC First-Timer Assistant · Pitch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #111111;
+      --accent: #E32636;
+      --fg: #F4F4F4;
+      --dim: #6B6B6B;
+      --line: #2a2a2a;
+
+      --type-hero: clamp(72px, 13vh, 142px);
+      --type-title: clamp(40px, 6.5vh, 72px);
+      --type-sub: clamp(26px, 3.5vh, 40px);
+      --type-body: clamp(18px, 2.3vh, 26px);
+      --type-small: clamp(13px, 1.5vh, 17px);
+      --type-mono: clamp(11px, 1.2vh, 14px);
+
+      --pad-x: clamp(48px, 5vw, 88px);
+      --pad-y: clamp(28px, 3vh, 40px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    /* ---------- DECK ---------- */
+    .deck {
+      position: fixed;
+      inset: 0;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: var(--pad-y) var(--pad-x);
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(20px);
+      transition: opacity 200ms ease, transform 200ms ease;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .slide.prev {
+      transform: translateX(-20px);
+    }
+
+    /* ---------- COMMON MOTIFS ---------- */
+    .slide-num {
+      position: absolute;
+      top: var(--pad-y);
+      left: var(--pad-x);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    .section-label {
+      position: absolute;
+      top: var(--pad-y);
+      right: var(--pad-x);
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    .grounding-line {
+      position: absolute;
+      bottom: var(--pad-y);
+      left: var(--pad-x);
+      width: 56px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .underline-red {
+      background-image: linear-gradient(var(--accent), var(--accent));
+      background-repeat: no-repeat;
+      background-size: 100% 2px;
+      background-position: 0 100%;
+      padding-bottom: 4px;
+    }
+
+    /* ---------- TYPE PRIMITIVES ---------- */
+    .h-oswald {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 0.95;
+    }
+
+    .h-hero {
+      font-size: var(--type-hero);
+    }
+
+    .h-title {
+      font-size: var(--type-title);
+    }
+
+    .h-sub {
+      font-size: var(--type-sub);
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .dim {
+      color: var(--dim);
+    }
+
+    .red {
+      color: var(--accent);
+    }
+
+    /* ---------- SLIDE 1 — TITLE ---------- */
+    .s1 .stack {
+      margin-top: auto;
+      max-width: 18ch;
+    }
+
+    .s1 .kicker {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .s1 h1 {
+      color: var(--fg);
+    }
+
+    .s1 h1 .red-word {
+      color: var(--accent);
+    }
+
+    .s1 h2 {
+      margin-top: 28px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      font-size: clamp(28px, 4vh, 46px);
+      text-transform: uppercase;
+      letter-spacing: 0.005em;
+      color: var(--dim);
+      line-height: 1;
+    }
+
+    .s1 .corner-meta {
+      position: absolute;
+      right: var(--pad-x);
+      bottom: var(--pad-y);
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      line-height: 1.7;
+    }
+
+    .s1 .corner-meta strong {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    /* ---------- SLIDE 2 — THE PANIC ---------- */
+    .s2 .title-row {
+      margin-bottom: 28px;
+      max-width: 22ch;
+    }
+
+    .s2 .scatter {
+      flex: 1;
+      position: relative;
+    }
+
+    .s2 .q {
+      position: absolute;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+    }
+
+    .s2 .q.small {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--dim);
+      font-size: clamp(16px, 2vh, 21px);
+      line-height: 1.35;
+    }
+
+    .s2 .q.ro {
+      color: var(--accent);
+    }
+
+    .s2 .q.big {
+      font-size: clamp(36px, 5.5vh, 62px);
+    }
+
+    .s2 .q.mid {
+      font-size: clamp(26px, 3.8vh, 42px);
+    }
+
+    .s2 .footer-note {
+      position: absolute;
+      bottom: var(--pad-y);
+      right: var(--pad-x);
+      color: var(--dim);
+      font-size: var(--type-small);
+      font-style: italic;
+    }
+
+    /* ---------- SLIDE 3 — WHAT EXISTS TODAY ---------- */
+    .s3 .title-row {
+      margin-bottom: 32px;
+    }
+
+    .s3 .cols {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(24px, 4vw, 56px);
+      align-items: stretch;
+    }
+
+    .s3 .col-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 28px;
+    }
+
+    .s3 .options-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      text-transform: uppercase;
+      font-size: clamp(22px, 3.2vh, 36px);
+      line-height: 1.1;
+      letter-spacing: -0.005em;
+      color: var(--fg);
+    }
+
+    .s3 .options-list li::before {
+      content: attr(data-i) "  ";
+      color: var(--dim);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.5em;
+      margin-right: 4px;
+      letter-spacing: 0.08em;
+    }
+
+    .s3 .right-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .s3 .big-nope {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: clamp(90px, 18vh, 200px);
+      text-transform: uppercase;
+      line-height: 0.85;
+      letter-spacing: -0.03em;
+    }
+
+    .s3 .big-nope-sub {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      color: var(--dim);
+      font-size: clamp(15px, 1.8vh, 20px);
+      margin-top: 12px;
+      max-width: 28ch;
+      line-height: 1.4;
+    }
+
+    /* ---------- SLIDE 4 — OUR ANSWER ---------- */
+    .s4 .body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: clamp(28px, 3.5vw, 56px);
+      margin-top: 16px;
+      align-items: center;
+    }
+
+    .s4 .title-row {
+      max-width: 22ch;
+      margin-bottom: 16px;
+    }
+
+    .s4 .positioning {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: clamp(20px, 2.8vh, 30px);
+      line-height: 1.35;
+      color: var(--fg);
+    }
+
+    .s4 .positioning .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      display: block;
+      margin-bottom: 6px;
+      letter-spacing: 0.1em;
+    }
+
+    /* chat mock */
+    .chat-mock {
+      background: rgba(10, 10, 10, 0.88);
+      border: 1px solid var(--line);
+      padding: clamp(14px, 1.6vh, 22px);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .chat-mock .chat-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    .chat-mock .chat-head .dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    .bubble {
+      max-width: 88%;
+      padding: 14px 18px;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(15px, 1.9vh, 20px);
+      line-height: 1.4;
+      border-radius: 6px;
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .bubble.ai {
+      align-self: flex-start;
+      background: #1a1a1a;
+      color: var(--fg);
+      border: 1px solid var(--line);
+    }
+
+    .bubble .bubble-label {
+      display: block;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+
+    /* ---------- SLIDE 5 — HOW IT WORKS ---------- */
+    .s5 .title-row {
+      margin-bottom: 32px;
+    }
+
+    .s5 .pipeline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 32px;
+    }
+
+    .s5 .node {
+      display: flex;
+      flex-direction: column;
+      padding: 16px 16px;
+      border-top: 2px solid var(--fg);
+      position: relative;
+    }
+
+    .s5 .node+.node {
+      border-left: 1px solid var(--line);
+    }
+
+    .s5 .node .node-i {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .s5 .node .node-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: clamp(18px, 2.6vh, 28px);
+      line-height: 1;
+      letter-spacing: -0.005em;
+    }
+
+    .s5 .node .node-meta {
+      margin-top: 10px;
+      font-size: var(--type-small);
+      color: var(--dim);
+      line-height: 1.35;
+    }
+
+    .s5 .arrow {
+      position: absolute;
+      right: -7px;
+      top: 24px;
+      color: var(--accent);
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      background: var(--bg);
+      padding: 0 2px;
+    }
+
+    .s5 .node:last-child .arrow {
+      display: none;
+    }
+
+    .s5 .callouts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(16px, 2vw, 32px);
+    }
+
+    .s5 .callout .c-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: clamp(20px, 2.8vh, 30px);
+      color: var(--accent);
+      letter-spacing: -0.005em;
+      line-height: 1;
+    }
+
+    .s5 .callout .c-line {
+      margin-top: 10px;
+      font-size: var(--type-body);
+      color: var(--fg);
+      line-height: 1.35;
+    }
+
+    .s5 .footer-line {
+      position: absolute;
+      bottom: var(--pad-y);
+      right: var(--pad-x);
+      color: var(--dim);
+      font-size: var(--type-small);
+      font-style: italic;
+    }
+
+    /* ---------- SLIDE 6 — TONE TEST ---------- */
+    .s6 .title-row {
+      margin-bottom: 24px;
+      max-width: 24ch;
+    }
+
+    .s6 .question-line {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-small);
+      color: var(--dim);
+      margin-bottom: 32px;
+      letter-spacing: 0.06em;
+    }
+
+    .s6 .question-line strong {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .s6 .compare {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(20px, 2.5vw, 36px);
+    }
+
+    .s6 .pane {
+      border: 1px solid var(--line);
+      padding: clamp(16px, 2vh, 28px);
+      display: flex;
+      flex-direction: column;
+      background: rgba(10, 10, 10, 0.88);
+    }
+
+    .s6 .pane.right {
+      border-color: var(--accent);
+    }
+
+    .s6 .pane-label {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 22px;
+    }
+
+    .s6 .pane.right .pane-label {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .s6 .pane-body {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(16px, 2vh, 22px);
+      line-height: 1.45;
+      color: var(--fg);
+    }
+
+    .s6 .pane.left .pane-body {
+      color: var(--dim);
+    }
+
+    .s6 .bottom-line {
+      position: absolute;
+      bottom: var(--pad-y);
+      right: var(--pad-x);
+      font-family: 'Oswald', sans-serif;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      font-size: clamp(16px, 2vh, 22px);
+      color: var(--fg);
+    }
+
+    .s6 .bottom-line .red {
+      color: var(--accent);
+    }
+
+    /* ---------- SLIDE 7 — WHAT THIS UNLOCKS ---------- */
+    .s7 .title-row {
+      margin-bottom: 28px;
+      max-width: 18ch;
+    }
+
+    .s7 .impact-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      flex: 1;
+      justify-content: center;
+      max-width: 52ch;
+    }
+
+    .s7 .impact {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+      align-items: baseline;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .s7 .impact:last-child {
+      border-bottom: none;
+    }
+
+    .s7 .impact-num {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(40px, 6vh, 66px);
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      min-width: 1.4em;
+    }
+
+    .s7 .impact-text {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: clamp(18px, 2.4vh, 26px);
+      line-height: 1.35;
+      color: var(--fg);
+    }
+
+
+    /* ---------- SLIDE 9 — CLOSE ---------- */
+    .s9 .stack {
+      margin-top: auto;
+      max-width: 18ch;
+    }
+
+    .s9 h1 {
+      color: var(--fg);
+    }
+
+    .s9 h1 .red {
+      color: var(--accent);
+    }
+
+    .s9 .below {
+      margin-top: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .s9 .topright {
+      position: absolute;
+      top: var(--pad-y);
+      right: var(--pad-x);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: var(--type-mono);
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    /* ---------- SLIDE BACKGROUNDS ---------- */
+    .s1,
+    .s2,
+    .s3,
+    .s4,
+    .s5,
+    .s6,
+    .s7 {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .s1 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.78), rgba(17, 17, 17, 0.78)), url('xPhotosForPresentation/first.jpg');
+    }
+
+    .s2 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.72), rgba(17, 17, 17, 0.72)), url('xPhotosForPresentation/second.jpg');
+    }
+
+    .s3 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.75), rgba(17, 17, 17, 0.75)), url('xPhotosForPresentation/third.webp');
+    }
+
+    .s4 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.78), rgba(17, 17, 17, 0.78)), url('xPhotosForPresentation/fourth.png');
+    }
+
+    .s5 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.80), rgba(17, 17, 17, 0.80)), url('xPhotosForPresentation/fifth.jpg');
+    }
+
+    .s6 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.72), rgba(17, 17, 17, 0.72)), url('xPhotosForPresentation/eighth.jpg');
+    }
+
+    .s7 {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.75), rgba(17, 17, 17, 0.75)), url('xPhotosForPresentation/seventh.webp');
+    }
+
+    /* ---------- NAV ---------- */
+    .nav-bar {
+      position: fixed;
+      bottom: 24px;
+      right: 32px;
+      display: flex;
+      gap: 22px;
+      z-index: 50;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 22px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      user-select: none;
+    }
+
+    .nav-bar button {
+      background: none;
+      border: 0;
+      cursor: pointer;
+      color: var(--dim);
+      font: inherit;
+      padding: 4px 8px;
+      transition: color 120ms ease;
+    }
+
+    .nav-bar button:hover {
+      color: var(--accent);
+    }
+
+    .counter {
+      position: fixed;
+      bottom: 28px;
+      left: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 0.12em;
+      z-index: 50;
+    }
+
+    .counter .current {
+      color: var(--fg);
+    }
+
+    /* ---------- OVERVIEW ---------- */
+    .overview {
+      position: fixed;
+      inset: 0;
+      background: #050505;
+      z-index: 100;
+      display: none;
+      padding: 48px;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    body.overview-mode .overview {
+      display: grid;
+    }
+
+    body.overview-mode .deck {
+      display: none;
+    }
+
+    body.overview-mode .nav-bar {
+      display: none;
+    }
+
+    body.overview-mode .counter {
+      display: none;
+    }
+
+    .ov-cell {
+      position: relative;
+      border: 1px solid var(--line);
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--bg);
+      transition: border-color 120ms ease;
+    }
+
+    .ov-cell:hover {
+      border-color: var(--accent);
+    }
+
+    .ov-cell .ov-scale {
+      transform-origin: top left;
+      pointer-events: none;
+    }
+
+    .ov-cell .ov-num {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 0.12em;
+      z-index: 2;
+    }
+
+    .ov-cell .ov-title {
+      position: absolute;
+      bottom: 12px;
+      left: 14px;
+      right: 14px;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      color: var(--fg);
+      letter-spacing: 0.04em;
+      z-index: 2;
+    }
+
+    /* ---------- responsive ---------- */
+    @media (max-width: 900px) {
+
+      .s3 .cols,
+      .s4 .body,
+      .s6 .compare,
+      .s8 .cols {
+        grid-template-columns: 1fr;
+      }
+
+      .s5 .pipeline {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .s5 .callouts {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="deck" id="deck">
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 1 — TITLE -->
+    <!-- ============================================================ -->
+    <section class="slide s1 active" data-screen-label="01 Title">
+      <div class="slide-num mono">01 / 08</div>
+      <div class="section-label">EC AI Builder Challenge / Submission 2026</div>
+
+      <div class="stack">
+        <div class="kicker">A submission for EC13</div>
+        <h1 class="h-oswald h-hero">
+          First time at<br />the <span class="red-word">castle</span>?
+        </h1>
+        <h2>We built the friend you need.</h2>
+      </div>
+
+      <div class="corner-meta">
+        <strong>[TechBros]</strong><br />
+        3 builders · 1 deck · 1 demo
+      </div>
+
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 2 — THE PANIC -->
+    <!-- ============================================================ -->
+    <section class="slide s2" data-screen-label="02 The Panic">
+      <div class="slide-num mono">02 / 08</div>
+      <div class="section-label">The problem</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">Before the yes,<br />there's a <span class="red">panic</span> episode.</h2>
+      </div>
+
+      <div class="scatter">
+        <div class="q big" style="top: 2%;  left: 0%;">How do I get<br />to Bonțida?</div>
+        <div class="q mid" style="top: 6%;  left: 44%;">Where do I sleep<br />if I'm not a tent person?</div>
+        <div class="q big ro" style="top: 32%; left: 18%;">Cât costă chestia<br />asta de fapt?</div>
+        <div class="q mid" style="top: 38%; right: 4%;">What if it rains?</div>
+        <div class="q small" style="top: 58%; left: 2%;  max-width: 22ch;">"i don't even know what line-up i'd care
+          about"</div>
+        <div class="q mid ro" style="top: 64%; left: 36%;">Nu mai merg<br />dacă plouă.</div>
+        <div class="q small" style="top: 76%; right: 8%; max-width: 26ch;">"convince the group chat this is a good idea"
+        </div>
+        <div class="q small ro" style="top: 86%; left: 6%;  max-width: 28ch;">"mă stresează puțin transportul"</div>
+      </div>
+
+      <div class="footer-note">every quote real. every panic real.</div>
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 3 — WHAT EXISTS TODAY -->
+    <!-- ============================================================ -->
+    <section class="slide s3" data-screen-label="03 The Gap">
+      <div class="slide-num mono">03 / 08</div>
+      <div class="section-label">The gap</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">What first-timers<br />get <span class="red">today</span>.</h2>
+      </div>
+
+      <div class="cols">
+        <div class="left-col">
+          <div class="col-label">The options</div>
+          <ul class="options-list">
+            <li data-i="01">27 FAQ links.</li>
+            <li data-i="02">Three Facebook groups.</li>
+            <li data-i="03">A 40-page PDF.</li>
+            <li data-i="04">A friend who "thinks" the shuttle leaves at 8.</li>
+            <li data-i="05">Reddit threads from EC9.</li>
+          </ul>
+        </div>
+        <div class="right-col">
+          <div class="col-label">The result</div>
+          <div class="big-nope">Nope.</div>
+          <div class="big-nope-sub">Or worse: they buy a ticket, panic the week of, and decide last minute not to come.
+          </div>
+        </div>
+      </div>
+
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 4 — OUR ANSWER -->
+    <!-- ============================================================ -->
+    <section class="slide s4" data-screen-label="04 Our Answer">
+      <div class="slide-num mono">04 / 08</div>
+      <div class="section-label">Our answer</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">One box. Any question.<br />Answers that sound <span class="red">like EC</span>.
+        </h2>
+      </div>
+
+      <div class="body">
+        <div class="positioning">
+          <div><span class="num">01</span>Ask anything. In <span class="underline-red">Romanian or English</span>.</div>
+          <div><span class="num">02</span>Get answered in <span class="underline-red">1-3 sentences</span>, not 27
+            links.</div>
+          <div><span class="num">03</span>Offered the <span class="underline-red">next thing</span> you didn't know to
+            ask.</div>
+        </div>
+
+        <div class="chat-mock">
+          <div class="chat-head">
+            <span><span class="dot"></span>EC FIRST-TIMER</span>
+            <span>LIVE DEMO</span>
+          </div>
+          <div class="bubble user">
+            <span class="bubble-label">You</span>
+            vin cu prietenii din București, ce fac cu cazarea?
+          </div>
+          <div class="bubble ai">
+            <span class="bubble-label">EC First-Timer</span>
+            Cluj &gt; Bonțida e mai ușor decât pare. Stați în Cluj, luați naveta EC dimineața. Vrei să-ți zic și de
+            tren?
+          </div>
+        </div>
+      </div>
+
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 5 — HOW IT WORKS -->
+    <!-- ============================================================ -->
+    <section class="slide s5" data-screen-label="05 How It Works">
+      <div class="slide-num mono">05 / 08</div>
+      <div class="section-label">How it works</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">Built like a <span class="red">real product</span>.</h2>
+      </div>
+
+      <div class="pipeline">
+        <div class="node">
+          <div class="node-i">01</div>
+          <div class="node-name">Browser</div>
+          <div class="node-meta">phone or laptop, no install.</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="node">
+          <div class="node-i">02</div>
+          <div class="node-name">Frontend</div>
+          <div class="node-meta">streaming chat UI.</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="node">
+          <div class="node-i">03</div>
+          <div class="node-name">Backend</div>
+          <div class="node-meta">auth, history, rate-limit.</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="node">
+          <div class="node-i">04</div>
+          <div class="node-name">Agent</div>
+          <div class="node-meta">tone + tool routing.</div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="node">
+          <div class="node-i">05</div>
+          <div class="node-name">Knowledge<br />Base</div>
+          <div class="node-meta">RO + EN, official EC sources.</div>
+        </div>
+      </div>
+
+      <div class="callouts">
+        <div class="callout">
+          <div class="c-name">Hybrid RAG</div>
+          <div class="c-line">vector + BM25, fused with RRF.</div>
+        </div>
+        <div class="callout">
+          <div class="c-name">Claude Haiku</div>
+          <div class="c-line">streaming token-by-token.</div>
+        </div>
+        <div class="callout">
+          <div class="c-name">Multi-turn</div>
+          <div class="c-line">full conversation context.</div>
+        </div>
+        <div class="callout">
+          <div class="c-name">RO + EN</div>
+          <div class="c-line">bilingual knowledge base.</div>
+        </div>
+      </div>
+
+      <div class="footer-line">three services. one experience. shippable today.</div>
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 6 — TONE TEST -->
+    <!-- ============================================================ -->
+    <section class="slide s6" data-screen-label="06 Tone Test">
+      <div class="slide-num mono">06 / 08</div>
+      <div class="section-label">The tone test</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">Tone matters more<br />than <span class="red">anything</span>.</h2>
+      </div>
+
+      <div class="question-line">
+        Same question, two answers. <strong>"ce iau cu mine dacă plouă?"</strong>
+      </div>
+
+      <div class="compare">
+        <div class="pane left">
+          <div class="pane-label">Generic chatbot</div>
+          <div class="pane-body">
+            Based on the weather forecast, we recommend that attendees prepare appropriate rain gear including but not
+            limited to waterproof jackets, rubber boots, and protective covers for electronic devices. Please consult
+            our comprehensive packing guide for detailed recommendations.
+          </div>
+        </div>
+        <div class="pane right">
+          <div class="pane-label">EC First-Timer</div>
+          <div class="pane-body">
+            Bocanci de cauciuc, hanorac impermeabil, o pungă pentru telefon. Noroiul face parte din experiență. Vrei și
+            niște tips de la cineva care a participat la ediția cu ploaie din 2018?
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-line">we trained the <span class="red">tone</span>, not just the facts.</div>
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 7 — WHAT THIS UNLOCKS -->
+    <!-- ============================================================ -->
+    <section class="slide s7" data-screen-label="07 What This Unlocks">
+      <div class="slide-num mono">07 / 08</div>
+      <div class="section-label">Why this works for EC</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">What this <span class="red">unlocks</span>.</h2>
+      </div>
+
+      <div class="impact-list">
+        <div class="impact">
+          <div class="impact-num">01</div>
+          <div class="impact-text">Fewer repetitive support questions.</div>
+        </div>
+        <div class="impact">
+          <div class="impact-num">02</div>
+          <div class="impact-text">Higher ticket purchase intent from undecided first-timers.</div>
+        </div>
+        <div class="impact">
+          <div class="impact-num">03</div>
+          <div class="impact-text">Anonymized insights on what scares people most.</div>
+        </div>
+        <div class="impact">
+          <div class="impact-num">04</div>
+          <div class="impact-text">Shareable plans for group chats. The actual deciding moment.</div>
+        </div>
+      </div>
+
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 8 — CLOSE -->
+    <!-- ============================================================ -->
+    <section class="slide s9" data-screen-label="08 Close">
+      <div class="slide-num mono">08 / 08</div>
+      <div class="topright">thanks. questions after.</div>
+
+      <div class="stack">
+        <h1 class="h-oswald h-hero">Now let's<br /><span class="red">show</span> you.</h1>
+        <div class="below">live demo follows.</div>
+      </div>
+
+      <div class="grounding-line"></div>
+    </section>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- OVERVIEW -->
+  <!-- ============================================================ -->
+  <div class="overview" id="overview"></div>
+
+  <!-- ============================================================ -->
+  <!-- COUNTER + NAV -->
+  <!-- ============================================================ -->
+  <div class="counter mono"><span class="current" id="cur">01</span> / 08</div>
+  <div class="nav-bar">
+    <button id="prev" aria-label="Previous slide">&lt;</button>
+    <button id="next" aria-label="Next slide">&gt;</button>
+  </div>
+
+  <script>
+    (function () {
+      const slides = Array.from(document.querySelectorAll('.slide'));
+      const total = slides.length;
+      let i = 0;
+      const cur = document.getElementById('cur');
+      const ov = document.getElementById('overview');
+
+      function go(n, dir) {
+        if (n < 0 || n >= total || n === i) return;
+        const old = slides[i];
+        const next = slides[n];
+        old.classList.remove('active');
+        old.classList.add('prev');
+        next.classList.remove('prev');
+        next.classList.add('active');
+        i = n;
+        cur.textContent = String(i + 1).padStart(2, '0');
+        // cleanup prev class after transition
+        setTimeout(() => old.classList.remove('prev'), 220);
+      }
+
+      function next() { go(i + 1); }
+      function prev() { go(i - 1); }
+
+      document.getElementById('next').addEventListener('click', next);
+      document.getElementById('prev').addEventListener('click', prev);
+
+      document.addEventListener('keydown', (e) => {
+        if (document.body.classList.contains('overview-mode')) {
+          if (e.key === 'Escape' || e.key === 'f' || e.key === 'F') {
+            document.body.classList.remove('overview-mode');
+            e.preventDefault();
+            return;
+          }
+          if (e.key >= '1' && e.key <= '9') {
+            const target = parseInt(e.key, 10) - 1;
+            if (target < total) { go(target); document.body.classList.remove('overview-mode'); }
+            e.preventDefault();
+            return;
+          }
+          return;
+        }
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { next(); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { prev(); e.preventDefault(); }
+        else if (e.key === 'f' || e.key === 'F') {
+          document.body.classList.add('overview-mode');
+          e.preventDefault();
+        } else if (e.key >= '1' && e.key <= '9') {
+          const target = parseInt(e.key, 10) - 1;
+          if (target < total) go(target);
+          e.preventDefault();
+        } else if (e.key === 'Home') { go(0); e.preventDefault(); }
+        else if (e.key === 'End') { go(total - 1); e.preventDefault(); }
+      });
+
+      // Build overview cells (live clones, scaled down)
+      function buildOverview() {
+        ov.innerHTML = '';
+        slides.forEach((s, idx) => {
+          const cell = document.createElement('div');
+          cell.className = 'ov-cell';
+          cell.innerHTML = `
+        <div class="ov-num">${String(idx + 1).padStart(2, '0')} / 08</div>
+        <div class="ov-title">${s.getAttribute('data-screen-label') || ''}</div>
+      `;
+          cell.addEventListener('click', () => {
+            go(idx);
+            document.body.classList.remove('overview-mode');
+          });
+          ov.appendChild(cell);
+        });
+      }
+      buildOverview();
+    })();
+  </script>
+
+</body>
+
+</html>

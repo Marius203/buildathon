@@ -1,4 +1,4 @@
-"""End-to-end answerer: retrieve via search_kb, generate via qwen 14b.
+"""End-to-end answerer: retrieve via search_kb, generate via Claude.
 
 If retrieval has no strong match (top vector distance >= LOW_CONFIDENCE_DISTANCE),
 swap to a "no context" prompt so the model refuses cleanly instead of riffing.
@@ -6,7 +6,6 @@ swap to a "no context" prompt so the model refuses cleanly instead of riffing.
 from __future__ import annotations
 
 from typing import Any
-
 from collections.abc import AsyncIterator, Iterator
 
 from app.agent.prompts import format_context, no_context_prompt, system_prompt
@@ -18,21 +17,23 @@ ANSWERER_MODEL = CLAUDE_MODEL
 LLM_OPTIONS = {"temperature": 0.5}
 
 
+def _build_messages(sys: str, history: list[dict], query: str) -> list[dict]:
+    return [{"role": "system", "content": sys}, *history, {"role": "user", "content": query}]
+
+
 def answer(
     query: str,
     lang: str = "en",
     topic: str | None = None,
     k: int = DEFAULT_K,
+    history: list[dict] | None = None,
 ) -> dict[str, Any]:
+    history = history or []
     chunks = search_kb(query, lang=lang, topic=topic, k=k)
 
     if not chunks or not has_strong_match(chunks):
-        # No relevant context — short-circuit to a clean refusal.
         msg = chat(
-            messages=[
-                {"role": "system", "content": no_context_prompt(lang)},
-                {"role": "user", "content": query},
-            ],
+            messages=_build_messages(no_context_prompt(lang), history, query),
             model=ANSWERER_MODEL,
             options=LLM_OPTIONS,
         )
@@ -46,27 +47,21 @@ def answer(
         }
 
     context = format_context(chunks)
-    sys = system_prompt(lang, context)
     msg = chat(
-        messages=[
-            {"role": "system", "content": sys},
-            {"role": "user", "content": query},
-        ],
+        messages=_build_messages(system_prompt(lang, context), history, query),
         model=ANSWERER_MODEL,
         options=LLM_OPTIONS,
     )
-    text = msg.get("content", "").strip()
     return {
         "query": query,
         "lang": lang,
         "topic": topic,
-        "answer": text,
+        "answer": msg.get("content", "").strip(),
         "sources": [
             {
                 "id": c["id"],
                 "section": c.get("section"),
                 "section_title": c.get("section_title"),
-                "topic": c.get("topic"),
                 "score": c.get("score"),
                 "vector_distance": c.get("vector_distance"),
             }
@@ -81,16 +76,15 @@ def answer_stream(
     lang: str = "en",
     topic: str | None = None,
     k: int = DEFAULT_K,
+    history: list[dict] | None = None,
 ) -> Iterator[dict[str, Any]]:
     """Yield {"token": str} dicts while generating, then a final {"done": True, ...} dict."""
+    history = history or []
     chunks = search_kb(query, lang=lang, topic=topic, k=k)
 
     if not chunks or not has_strong_match(chunks):
         for token in chat_stream(
-            messages=[
-                {"role": "system", "content": no_context_prompt(lang)},
-                {"role": "user", "content": query},
-            ],
+            messages=_build_messages(no_context_prompt(lang), history, query),
             model=ANSWERER_MODEL,
             options=LLM_OPTIONS,
         ):
@@ -99,12 +93,8 @@ def answer_stream(
         return
 
     context = format_context(chunks)
-    sys = system_prompt(lang, context)
     for token in chat_stream(
-        messages=[
-            {"role": "system", "content": sys},
-            {"role": "user", "content": query},
-        ],
+        messages=_build_messages(system_prompt(lang, context), history, query),
         model=ANSWERER_MODEL,
         options=LLM_OPTIONS,
     ):
@@ -115,7 +105,6 @@ def answer_stream(
             "id": c["id"],
             "section": c.get("section"),
             "section_title": c.get("section_title"),
-            "topic": c.get("topic"),
             "score": c.get("score"),
             "vector_distance": c.get("vector_distance"),
         }
@@ -129,16 +118,15 @@ async def answer_stream_async(
     lang: str = "en",
     topic: str | None = None,
     k: int = DEFAULT_K,
+    history: list[dict] | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    """Async version — keeps the event loop free while Ollama streams tokens."""
+    """Async version — keeps the event loop free while Claude streams tokens."""
+    history = history or []
     chunks = search_kb(query, lang=lang, topic=topic, k=k)
 
     if not chunks or not has_strong_match(chunks):
         async for token in chat_stream_async(
-            messages=[
-                {"role": "system", "content": no_context_prompt(lang)},
-                {"role": "user", "content": query},
-            ],
+            messages=_build_messages(no_context_prompt(lang), history, query),
             model=ANSWERER_MODEL,
             options=LLM_OPTIONS,
         ):
@@ -147,12 +135,8 @@ async def answer_stream_async(
         return
 
     context = format_context(chunks)
-    sys_msg = system_prompt(lang, context)
     async for token in chat_stream_async(
-        messages=[
-            {"role": "system", "content": sys_msg},
-            {"role": "user", "content": query},
-        ],
+        messages=_build_messages(system_prompt(lang, context), history, query),
         model=ANSWERER_MODEL,
         options=LLM_OPTIONS,
     ):
@@ -163,7 +147,6 @@ async def answer_stream_async(
             "id": c["id"],
             "section": c.get("section"),
             "section_title": c.get("section_title"),
-            "topic": c.get("topic"),
             "score": c.get("score"),
             "vector_distance": c.get("vector_distance"),
         }

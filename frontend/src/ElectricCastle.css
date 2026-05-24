@@ -422,34 +422,20 @@ body {
   border: 1.5px solid var(--ec-black);
 }
 
-.ec-chat__thinking {
-  padding: 10px 14px;
+.ec-chat__typing {
+  display: flex; gap: 4px; padding: 12px 16px;
   background: var(--ec-white);
   border: 1.5px solid var(--ec-black);
-  border-radius: 4px;
 }
-.ec-chat__thinking-text {
-  font-size: 0.78rem;
-  color: var(--ec-black);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  white-space: nowrap;
+.ec-chat__typing-dot {
+  width: 6px; height: 6px;
+  background: var(--ec-black);
+  border-radius: 50%;
+  animation: ec-bounce 0.9s infinite;
 }
-.ec-chat__thinking-text--visible {
-  opacity: 1;
-  animation: ec-thinking-pulse 1.6s ease-in-out infinite;
-}
-@keyframes ec-thinking-pulse {
-  0%, 100% { opacity: 0.45; }
-  50%       { opacity: 1; }
-}
-.ec-chat__thinking-dot {
-  animation: ec-dot-blink 0.9s ease-in-out infinite;
-  opacity: 0;
-}
-@keyframes ec-dot-blink {
-  0%, 100% { opacity: 0; }
-  50%       { opacity: 1; }
+@keyframes ec-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-5px); }
 }
 
 .ec-chat__chips {

@@ -1,9 +1,9 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import "./FaqPage.css";
 
 const FAQ_DATA = [
   {
-    category: "Tickets & Personalization",
+    category: "Bilete & Acces",
     icon: "🎫",
     items: [
       { q: "Ce tipuri de bilete există?", a: "Abonament 4 zile (cel mai popular), bilet zilnic, pachet cu camping inclus și VIP cu zone exclusive, toalete separate și spații dedicate. Cumpără exclusiv de pe site-ul oficial — revânzătorii vând bilete false." },
@@ -23,7 +23,7 @@ const FAQ_DATA = [
     ],
   },
   {
-    category: "Camping & Cazare",
+    category: "Cazare & Camping",
     icon: "⛺",
     items: [
       { q: "Ce variante de cazare există?", a: "Camping standard (aduci propriul cort), Glamping (corturi premium pre-instalate cu paturi, se rezervă rapid), hotel în Cluj-Napoca (30km distanță, naveta zilnică cu shuttle) sau pensiuni în Bonțida (raritate)." },
@@ -43,13 +43,12 @@ const FAQ_DATA = [
     ],
   },
   {
-    category: "Cashless System",
+    category: "Cashless & Plăți",
     icon: "💳",
     items: [
       { q: "Cum funcționează sistemul cashless?", a: "Electric Castle funcționează 100% cashless. Încarci bani pe brățara RFID din aplicația EC sau de la stațiile fizice din festival și plătești la orice stand atingând brățara de terminal." },
       { q: "Unde pot încărca bani pe brățară?", a: "Credit Point-ul este doar la intrarea în festival, imediat după ce intri. Poți de asemenea încărca online din aplicația EC sau de pe site oricând." },
       { q: "Ce se întâmplă dacă pierd brățara?", a: "O poți bloca imediat din aplicația EC pentru a proteja soldul. Contactează echipa EC la standul de informații pentru o brățară de înlocuire." },
-      { q: "Cum recuperez banii de pe brățară după festival?", a: "Rambursarea online este gratuită, disponibilă 30 de zile după festival. Rambursarea on-site are un comision de 3%. Accesează contul EC și mergi la secțiunea cashless." },
     ],
   },
   {
@@ -58,7 +57,6 @@ const FAQ_DATA = [
     items: [
       { q: "Ce opțiuni de mâncare există?", a: "Există foodcourturi principale (Royal Food Court, Castle Food Court, Hillside, Hangar) cu zeci de food trucks: pizza, burgeri, tex-mex, vegan, ethnic food (thai, indian, asian), fine dining și dulciuri. Aproape toți vendorii au cel puțin un preparat vegan." },
       { q: "Există opțiuni vegetariene/vegane?", a: "Da. Zero (complet vegan), Wok'n Roll (noodles cu legume), ThaiMe (dumpling veggies), Fumuri la Hangar (Mac & Cheese), Cimbru (sandwich halloumi). Taste of Transylvania are platou de vinete vegan și ciorbă de ciuperci." },
-      { q: "Unde pot lua micul dejun?", a: "RedBarn (spanac cremos cu ouă), UMami în castel (Huevos Rotos), Royal Breakfast by Lidl în camping (simplu și accesibil). Zona de camping are bar 24/24." },
       { q: "Pot aduce mâncare și băutură de acasă?", a: "Poți aduce alimente și băuturi non-alcoolice în cantități rezonabile. Sticlele de sticlă și recipientele metalice cu margini ascuțite sunt interzise la intrare." },
     ],
   },
@@ -69,97 +67,162 @@ const FAQ_DATA = [
       { q: "Ce nu este permis la festival?", a: "Interzis: sticle de sticlă, recipiente metalice cu margini ascuțite, droguri, animale de companie, generatoare personale, drone fără acreditare, arme. Permis: alimente non-alcoolice, umbrele, aparat foto fără obiectiv detașabil." },
       { q: "Care este numărul de urgență al festivalului?", a: "Safety Line: +40 741 069 443. Găsești echipa Red Team în tot festivalul, gata să ajute oricând." },
       { q: "Ce fac dacă mă simt nesigur?", a: "Comandă un 'Angel Shot' la orice bar — cineva din echipă va veni să te ajute discret. Poți găsi Red Team-ul în orice colț al festivalului. Nu ești niciodată singur." },
-      { q: "Există servicii medicale?", a: "Da, First Aid se găsește lângă Main Stage, lângă Premium Parking, lângă scena Ping Pong by Burn, în potcoava castelului spre Backyard și în camping lângă dușuri." },
-    ],
-  },
-  {
-    category: "EC Village",
-    icon: "🏕️",
-    items: [
-      { q: "Ce este EC Village?", a: "EC Village este zona de camping și servicii a festivalului, deschisă din miercuri 15 iulie la 12:00. Include camping, glamping, dușuri, activări sponsori, Camping Stage și toate facilitățile pentru campatori." },
-      { q: "Ce activități sunt în camping?", a: "Body & Mind by World Class, Beach Volley by Men Expert, Bodega by Havana, Burn Energy Lounge, Fizz It Up by Schweppes, E.ON Charging Point, Chill Tent Aliat, Royal Breakfast și Persil Laundromat." },
-      { q: "Există locuri de blocare a bagajelor?", a: "Da, Lockere by Eurolife FFH sunt disponibile pe aleea de exit și la VIP. Nu există lockere în camping." },
-      { q: "Pot intra în festival cu mașina?", a: "Accesul auto este restricționat în festival. Există Uber/Taxi Pickup Point pe lângă camping spre podul din Bonțida și Go Bicycle Parking la intrarea în EC Village." },
     ],
   },
 ];
 
-// Toate întrebările posibile pentru autocomplete
 const ALL_QUESTIONS = FAQ_DATA.flatMap(cat => cat.items.map(i => i.q));
-const ALL_TOPICS = FAQ_DATA.map(cat => cat.category);
-const SUGGESTIONS = [...ALL_TOPICS, ...ALL_QUESTIONS];
+const ALL_TOPICS    = FAQ_DATA.map(cat => cat.category);
 
-function getCompletion(input) {
-  if (!input || input.length < 2) return "";
+function getSuggestions(input) {
+  if (!input || input.length < 2) return [];
   const lower = input.toLowerCase();
-  const match = SUGGESTIONS.find(s => s.toLowerCase().startsWith(lower));
-  if (!match) return "";
-  return match.slice(input.length); // doar sufixul
+  const topicMatches = ALL_TOPICS.filter(s => s.toLowerCase().includes(lower)).map(s => ({ label: s, type: "categorie" }));
+  const qMatches     = ALL_QUESTIONS.filter(s => s.toLowerCase().includes(lower)).map(s => ({ label: s, type: "întrebare" }));
+  const all = [...topicMatches, ...qMatches];
+  all.sort((a, b) => {
+    const aStart = a.label.toLowerCase().startsWith(lower) ? 0 : 1;
+    const bStart = b.label.toLowerCase().startsWith(lower) ? 0 : 1;
+    return aStart - bStart;
+  });
+  return all.slice(0, 6);
 }
 
 function SearchBar({ value, onChange, onSubmit }) {
-  const completion = getCompletion(value);
-  const inputRef = useRef(null);
+  const [focused, setFocused]     = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  const inputRef                  = useRef(null);
+  const wrapRef                   = useRef(null);
+
+  const suggestions = getSuggestions(value);
+  const showDrop    = focused && suggestions.length > 0;
+
+  useEffect(() => { setActiveIdx(-1); }, [value]);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setFocused(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function pickSuggestion(label, type) {
+    onChange(label);
+    setFocused(false);
+    setTimeout(() => onSubmit(label, type), 0);
+  }
 
   function handleKeyDown(e) {
-    if ((e.key === "Tab" || e.key === "ArrowRight") && completion) {
-      e.preventDefault();
-      onChange(value + completion);
-    } else if (e.key === "Enter") {
-      onSubmit();
+    if (showDrop) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIdx(i => Math.min(i + 1, suggestions.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIdx(i => Math.max(i - 1, -1));
+        return;
+      }
+      if ((e.key === "Tab" || e.key === "Enter") && activeIdx >= 0) {
+        e.preventDefault();
+        pickSuggestion(suggestions[activeIdx].label, suggestions[activeIdx].type);
+        return;
+      }
+      if (e.key === "Escape") { setFocused(false); return; }
     }
+    if (e.key === "Enter") onSubmit();
+  }
+
+  function highlight(label) {
+    const lower = value.toLowerCase();
+    const idx   = label.toLowerCase().indexOf(lower);
+    if (idx === -1) return label;
+    return (
+      <>
+        {label.slice(0, idx)}
+        <strong>{label.slice(idx, idx + value.length)}</strong>
+        {label.slice(idx + value.length)}
+      </>
+    );
   }
 
   return (
-    <div className="faq-search-wrap">
-      <div className="faq-search-box">
+    <div className="faq-search-wrap" ref={wrapRef}>
+      <div className={`faq-search-box ${showDrop ? "faq-search-box--open" : ""}`}>
         <svg className="faq-search-icon" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>
-        <div className="faq-search-inner">
-          {/* Ghost text pentru autocomplete */}
-          {value && completion && (
-            <span className="faq-autocomplete-ghost" aria-hidden="true">
-              <span style={{ color: "transparent" }}>{value}</span>
-              <span className="faq-autocomplete-suffix">{completion}</span>
-            </span>
-          )}
-          <input
-            ref={inputRef}
-            className="faq-search-input"
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={value ? "" : "Start here and search..."}
-            autoComplete="off"
-            spellCheck="false"
-          />
-        </div>
+
+        <input
+          ref={inputRef}
+          className="faq-search-input"
+          value={value}
+          onChange={e => { onChange(e.target.value); setFocused(true); }}
+          onFocus={() => setFocused(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="Caută orice despre festival..."
+          autoComplete="off"
+          spellCheck="false"
+          aria-autocomplete="list"
+          aria-expanded={showDrop}
+        />
+
         {value && (
-          <button className="faq-search-clear" onClick={() => onChange("")}>✕</button>
+          <button className="faq-search-clear" onClick={() => { onChange(""); inputRef.current?.focus(); }} aria-label="Șterge">✕</button>
         )}
-        <button className="faq-search-btn" onClick={onSubmit}>
+
+        <button className="faq-search-btn" onClick={() => onSubmit()} aria-label="Caută">
           <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
         </button>
       </div>
-      {value && completion && (
-        <p className="faq-autocomplete-hint">Tab sau → pentru a completa</p>
+
+      {showDrop && (
+        <ul className="faq-suggestions" role="listbox">
+          {suggestions.map((s, i) => (
+            <li
+              key={i}
+              role="option"
+              aria-selected={i === activeIdx}
+              className={`faq-suggestion-item ${i === activeIdx ? "faq-suggestion-item--active" : ""}`}
+              onMouseDown={e => { e.preventDefault(); pickSuggestion(s.label, s.type); }}
+              onMouseEnter={() => setActiveIdx(i)}
+            >
+              <span className="faq-suggestion-type">{s.type === "categorie" ? "📂" : "❓"}</span>
+              <span className="faq-suggestion-label">{highlight(s.label)}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
 }
 
-function FaqItem({ q, a }) {
-  const [open, setOpen] = useState(false);
+function FaqItem({ q, a, delayIndex = 0, badge, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+
   return (
-    <div className={`faq-item ${open ? "faq-item--open" : ""}`}>
-      <button className="faq-item-q" onClick={() => setOpen(o => !o)}>
-        <span className="faq-item-arrow">{open ? "↑" : "↓"}</span>
-        <span>{q}</span>
+    <div
+      className={`faq-box ${open ? "faq-box--open" : ""}`}
+      style={{ animationDelay: `${delayIndex * 0.06}s` }}
+    >
+      {badge && <span className="faq-result-badge">{badge}</span>}
+
+      <button className="faq-box-q" onClick={() => setOpen(o => !o)}>
+        <span className="faq-box-q-text">{q}</span>
+        <span className="faq-box-q-icon">+</span>
       </button>
-      {open && <div className="faq-item-a">{a}</div>}
+
+      <div className={`faq-box-a ${open ? "faq-box-a--open" : ""}`}>
+        <div className="faq-box-a-inner">
+          <div className="faq-box-a-content">
+            <p>{a}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -168,35 +231,70 @@ function TopicView({ topic, onBack }) {
   return (
     <div className="faq-topic-view">
       <button className="faq-back-btn" onClick={onBack}>
-        ← BACK TO MAIN TOPICS
+        ← Înapoi la categorii
       </button>
+
       <h2 className="faq-topic-title">
-        <span>{topic.icon}</span> {topic.category}
+        <span>{topic.icon}</span>
+        {topic.category}
       </h2>
+      <p className="faq-topic-subtitle">{topic.items.length} întrebări frecvente</p>
+
       <div className="faq-items-list">
         {topic.items.map((item, i) => (
-          <FaqItem key={i} q={item.q} a={item.a} />
+          <FaqItem key={i} q={item.q} a={item.a} delayIndex={i} />
         ))}
       </div>
     </div>
   );
 }
 
-function SearchResults({ results, query }) {
+function SearchResults({ results, query, onBack, exactQuestion }) {
   if (results.length === 0) {
     return (
-      <div className="faq-no-results">
-        <p>Nu am găsit rezultate pentru <strong>"{query}"</strong>.</p>
-        <p>Încearcă cu alt termen sau folosește asistentul AI 👇</p>
+      <div className="faq-no-results ec-fade-in">
+        <div className="faq-no-results-icon">🔍</div>
+        <p>Niciun rezultat pentru <strong>"{query}"</strong>.</p>
+        <p style={{ fontSize: "0.82rem", color: "#777", fontWeight: 400 }}>
+          Încearcă un cuvânt mai scurt sau navighează la o categorie.
+        </p>
+        <button className="faq-back-btn" onClick={onBack} style={{ margin: "20px auto 0", alignSelf: "center" }}>
+          ← Înapoi
+        </button>
       </div>
     );
   }
+
   return (
     <div className="faq-topic-view">
-      <p className="faq-results-count">{results.length} rezultate pentru <strong>"{query}"</strong></p>
+      <div className="faq-results-header">
+        <button className="faq-back-btn" onClick={onBack}>← Înapoi</button>
+        <p className="faq-results-count">{results.length} răspunsuri pentru „{query}"</p>
+      </div>
+
       <div className="faq-items-list">
         {results.map((item, i) => (
-          <FaqItem key={i} q={item.q} a={item.a} />
+          <FaqItem
+            key={i}
+            q={item.q}
+            a={item.a}
+            delayIndex={i}
+            badge={item._cat}
+            defaultOpen={exactQuestion ? item.q === exactQuestion : false}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FaqMarquee() {
+  const text = "⚡ ELECTRIC CASTLE 2025 • BONȚIDA, CLUJ • 10–13 IULIE • ";
+  return (
+    <div className="faq-marquee" aria-hidden="true">
+      <div className="faq-marquee__inner">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <span key={i}>{text}</span>
         ))}
       </div>
     </div>
@@ -204,13 +302,40 @@ function SearchResults({ results, query }) {
 }
 
 export default function FaqPage() {
-  const [search, setSearch]       = useState("");
-  const [submitted, setSubmitted] = useState("");
+  const [search, setSearch]           = useState("");
+  const [submitted, setSubmitted]     = useState("");
   const [activeTopic, setActiveTopic] = useState(null);
+  const [exactQuestion, setExactQuestion] = useState(null);
 
-  function handleSubmit() {
-    setSubmitted(search);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTopic, submitted]);
+
+  function handleSubmit(override, type) {
+    const q = (typeof override === "string" ? override : search).trim();
+    if (!q) return;
+
+    if (type === "categorie") {
+      const topic = FAQ_DATA.find(cat => cat.category === q);
+      if (topic) {
+        setSubmitted("");
+        setExactQuestion(null);
+        setActiveTopic(topic);
+        return;
+      }
+    }
+
+    const isExactQuestion = ALL_QUESTIONS.includes(q);
+    setExactQuestion(isExactQuestion ? q : null);
+    setSubmitted(q);
     setActiveTopic(null);
+  }
+
+  function handleBack() {
+    setSubmitted("");
+    setSearch("");
+    setActiveTopic(null);
+    setExactQuestion(null);
   }
 
   const searchResults = useMemo(() => {
@@ -220,7 +345,7 @@ export default function FaqPage() {
     FAQ_DATA.forEach(cat => {
       cat.items.forEach(item => {
         if (item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q)) {
-          results.push(item);
+          results.push({ ...item, _cat: cat.category });
         }
       });
     });
@@ -233,38 +358,41 @@ export default function FaqPage() {
 
   return (
     <div className="faq-page">
-      <div className="faq-header">
-        <h1 className="faq-title">FAQ</h1>
-        <SearchBar
-          value={search}
-          onChange={v => { setSearch(v); if (!v) setSubmitted(""); }}
-          onSubmit={handleSubmit}
-        />
+      <div className="faq-hero">
+        <div className="faq-hero-inner">
+          <div className="faq-hero-eyebrow">Întrebări frecvente</div>
+          <h1 className="faq-title">Got<br/><em>questions?</em></h1>
+          <p className="faq-hero-sub">Electric Castle 2025 · Bonțida, Cluj</p>
+          <SearchBar
+            value={search}
+            onChange={v => { setSearch(v); if (!v) setSubmitted(""); }}
+            onSubmit={handleSubmit}
+          />
+        </div>
       </div>
+
+      <FaqMarquee />
 
       <div className="faq-body">
         {showTopics && (
-          <>
-            <h2 className="faq-main-topics-title">MAIN TOPICS</h2>
-            <div className="faq-topics-list">
+          <div className="ec-fade-in">
+            <div className="faq-section-label">Alege o categorie</div>
+            <div className="faq-topics-grid">
               {FAQ_DATA.map((cat, i) => (
                 <button
                   key={i}
-                  className="faq-topic-btn"
+                  className="faq-topic-card"
+                  style={{ animationDelay: `${i * 0.06}s` }}
                   onClick={() => setActiveTopic(cat)}
                 >
-                  <span className="faq-topic-btn-label">
-                    <span className="faq-topic-btn-icon">{cat.icon}</span>
-                    {cat.category}
-                  </span>
-                  <span className="faq-topic-btn-arrow">→</span>
+                  <span className="faq-topic-card-icon">{cat.icon}</span>
+                  <span className="faq-topic-card-title">{cat.category}</span>
+                  <span className="faq-topic-card-count">{cat.items.length} întrebări</span>
+                  <span className="faq-topic-card-arrow">→</span>
                 </button>
               ))}
             </div>
-            <div className="faq-bottom-cta">
-              <p>Nu ai găsit răspunsul? Asistentul AI e în colțul dreapta-jos 👇</p>
-            </div>
-          </>
+          </div>
         )}
 
         {showTopic && (
@@ -272,7 +400,12 @@ export default function FaqPage() {
         )}
 
         {showSearch && (
-          <SearchResults results={searchResults} query={submitted} />
+          <SearchResults
+            results={searchResults}
+            query={submitted}
+            onBack={handleBack}
+            exactQuestion={exactQuestion}
+          />
         )}
       </div>
     </div>

@@ -151,11 +151,13 @@ export default function App() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       if (!res.body) throw new Error("No response body");
+      const aiMsgIndex = msgIndexRef.current * 2 + 1;
+      msgIndexRef.current += 1;
+      setTyping(false);
+      setMessages(prev => [...prev, { role: "ai", text: "", index: aiMsgIndex, feedback: null }]);
       const reader  = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let isFirstToken = true;
-      let aiMsgIndex;
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -170,22 +172,14 @@ export default function App() {
             const data  = JSON.parse(jsonStr);
             const token = data.token ?? data.text ?? data.content ?? data.answer ?? "";
             if (token) {
-              if (isFirstToken) {
-                aiMsgIndex = msgIndexRef.current * 2 + 1;
-                msgIndexRef.current += 1;
-                setTyping(false);
-                setMessages(prev => [...prev, { role: "ai", text: token, index: aiMsgIndex, feedback: null }]);
-                isFirstToken = false;
-              } else {
-                setMessages(prev => {
-                  const updated = [...prev];
-                  updated[updated.length - 1] = {
-                    ...updated[updated.length - 1],
-                    text: updated[updated.length - 1].text + token,
-                  };
-                  return updated;
-                });
-              }
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  ...updated[updated.length - 1],
+                  text: updated[updated.length - 1].text + token,
+                };
+                return updated;
+              });
             }
           } catch { continue; }
         }

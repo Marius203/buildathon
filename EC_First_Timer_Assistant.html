@@ -708,7 +708,8 @@
     .s4,
     .s5,
     .s6,
-    .s7 {
+    .s7,
+    .s8-future {
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -740,6 +741,10 @@
 
     .s7 {
       background-image: linear-gradient(rgba(17, 17, 17, 0.75), rgba(17, 17, 17, 0.75)), url('xPhotosForPresentation/seventh.webp');
+    }
+
+    .s8-future {
+      background-image: linear-gradient(rgba(17, 17, 17, 0.78), rgba(17, 17, 17, 0.78)), url('xPhotosForPresentation/tenth.jpeg');
     }
 
     /* ---------- NAV ---------- */
@@ -859,13 +864,43 @@
       z-index: 2;
     }
 
+    /* ---------- SLIDE 8 — FUTURE PLANS ---------- */
+    .s8-future .title-row { margin-bottom: 40px; }
+    .s8-future .future-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(18px, 2.2vh, 28px) clamp(40px, 5vw, 80px);
+      align-content: center;
+    }
+    .s8-future .future-item {
+      padding-left: 18px;
+      border-left: 2px solid var(--accent);
+    }
+    .s8-future .future-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: clamp(20px, 2.6vh, 28px);
+      color: var(--fg);
+      letter-spacing: -0.005em;
+      line-height: 1;
+      margin-bottom: 7px;
+    }
+    .s8-future .future-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(14px, 1.7vh, 18px);
+      color: var(--dim);
+      line-height: 1.45;
+    }
+
     /* ---------- responsive ---------- */
     @media (max-width: 900px) {
 
       .s3 .cols,
       .s4 .body,
       .s6 .compare,
-      .s8 .cols {
+      .s8-future .future-grid {
         grid-template-columns: 1fr;
       }
 
@@ -889,7 +924,7 @@
     <!-- SLIDE 1 — TITLE -->
     <!-- ============================================================ -->
     <section class="slide s1 active" data-screen-label="01 Title">
-      <div class="slide-num mono">01 / 08</div>
+      <div class="slide-num mono">01 / 09</div>
       <div class="section-label">EC AI Builder Challenge / Submission 2026</div>
 
       <div class="stack">
@@ -912,7 +947,7 @@
     <!-- SLIDE 2 — THE PANIC -->
     <!-- ============================================================ -->
     <section class="slide s2" data-screen-label="02 The Panic">
-      <div class="slide-num mono">02 / 08</div>
+      <div class="slide-num mono">02 / 09</div>
       <div class="section-label">The problem</div>
 
       <div class="title-row">
@@ -940,7 +975,7 @@
     <!-- SLIDE 3 — WHAT EXISTS TODAY -->
     <!-- ============================================================ -->
     <section class="slide s3" data-screen-label="03 The Gap">
-      <div class="slide-num mono">03 / 08</div>
+      <div class="slide-num mono">03 / 09</div>
       <div class="section-label">The gap</div>
 
       <div class="title-row">
@@ -973,7 +1008,7 @@
     <!-- SLIDE 4 — OUR ANSWER -->
     <!-- ============================================================ -->
     <section class="slide s4" data-screen-label="04 Our Answer">
-      <div class="slide-num mono">04 / 08</div>
+      <div class="slide-num mono">04 / 09</div>
       <div class="section-label">Our answer</div>
 
       <div class="title-row">
@@ -1014,7 +1049,7 @@
     <!-- SLIDE 5 — HOW IT WORKS -->
     <!-- ============================================================ -->
     <section class="slide s5" data-screen-label="05 How It Works">
-      <div class="slide-num mono">05 / 08</div>
+      <div class="slide-num mono">05 / 09</div>
       <div class="section-label">How it works</div>
 
       <div class="title-row">
@@ -1080,7 +1115,7 @@
     <!-- SLIDE 6 — TONE TEST -->
     <!-- ============================================================ -->
     <section class="slide s6" data-screen-label="06 Tone Test">
-      <div class="slide-num mono">06 / 08</div>
+      <div class="slide-num mono">06 / 09</div>
       <div class="section-label">The tone test</div>
 
       <div class="title-row">
@@ -1117,7 +1152,7 @@
     <!-- SLIDE 7 — WHAT THIS UNLOCKS -->
     <!-- ============================================================ -->
     <section class="slide s7" data-screen-label="07 What This Unlocks">
-      <div class="slide-num mono">07 / 08</div>
+      <div class="slide-num mono">07 / 09</div>
       <div class="section-label">Why this works for EC</div>
 
       <div class="title-row">
@@ -1147,10 +1182,51 @@
     </section>
 
     <!-- ============================================================ -->
-    <!-- SLIDE 8 — CLOSE -->
+    <!-- SLIDE 8 — FUTURE PLANS -->
     <!-- ============================================================ -->
-    <section class="slide s9" data-screen-label="08 Close">
-      <div class="slide-num mono">08 / 08</div>
+    <section class="slide s8-future" data-screen-label="08 Future Plans">
+      <div class="slide-num mono">08 / 09</div>
+      <div class="section-label">What's next</div>
+
+      <div class="title-row">
+        <h2 class="h-oswald h-title">Where we <span class="red">take it</span>.</h2>
+      </div>
+
+      <div class="future-grid">
+        <div class="future-item">
+          <div class="future-name">Model improvement</div>
+          <div class="future-desc">Eval-driven prompt iteration. Fine-tuning on real festival feedback. Ongoing score tracking.</div>
+        </div>
+        <div class="future-item">
+          <div class="future-name">Agentic search</div>
+          <div class="future-desc">Live Google searches and web lookups so answers reflect real-time info, not just a static KB.</div>
+        </div>
+        <div class="future-item">
+          <div class="future-name">Richer data</div>
+          <div class="future-desc">Official EC knowledge base, structured FAQs, past edition archives, transport timetables.</div>
+        </div>
+        <div class="future-item">
+          <div class="future-name">Trusted source gathering</div>
+          <div class="future-desc">Scraping official EC pages, CFR/RATUC APIs, accommodation platforms — always fresh, always cited.</div>
+        </div>
+        <div class="future-item">
+          <div class="future-name">Edge case handling</div>
+          <div class="future-desc">Graceful refusals, low-confidence detection, escalation to human support when needed.</div>
+        </div>
+        <div class="future-item">
+          <div class="future-name">Personalization</div>
+          <div class="future-desc">Remember user preferences, favourite artists, group size — and build a shareable festival plan.</div>
+        </div>
+      </div>
+
+      <div class="grounding-line"></div>
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- SLIDE 9 — CLOSE -->
+    <!-- ============================================================ -->
+    <section class="slide s9" data-screen-label="09 Close">
+      <div class="slide-num mono">09 / 09</div>
       <div class="topright">thanks. questions after.</div>
 
       <div class="stack">
@@ -1171,7 +1247,7 @@
   <!-- ============================================================ -->
   <!-- COUNTER + NAV -->
   <!-- ============================================================ -->
-  <div class="counter mono"><span class="current" id="cur">01</span> / 08</div>
+  <div class="counter mono"><span class="current" id="cur">01</span> / 09</div>
   <div class="nav-bar">
     <button id="prev" aria-label="Previous slide">&lt;</button>
     <button id="next" aria-label="Next slide">&gt;</button>
@@ -1240,7 +1316,7 @@
           const cell = document.createElement('div');
           cell.className = 'ov-cell';
           cell.innerHTML = `
-        <div class="ov-num">${String(idx + 1).padStart(2, '0')} / 08</div>
+        <div class="ov-num">${String(idx + 1).padStart(2, '0')} / 09</div>
         <div class="ov-title">${s.getAttribute('data-screen-label') || ''}</div>
       `;
           cell.addEventListener('click', () => {

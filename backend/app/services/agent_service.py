@@ -1,10 +1,11 @@
 from collections.abc import AsyncIterator
+import os
 
 import httpx
 
 from app.db.repositories.chat_repo import get_history
 
-AGENT_URL = "http://localhost:8000"
+AGENT_URL = os.getenv("AGENT_URL", "http://localhost:8000")
 
 
 def _to_history(raw: list[dict]) -> list[dict]:
